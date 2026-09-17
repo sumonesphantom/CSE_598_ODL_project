@@ -1,0 +1,5 @@
+transition,count,share
+correct -> correct,2812,0.7164331210191083
+correct -> wrong,303,0.07719745222929936
+wrong -> correct,98,0.024968152866242037
+wrong -> wrong,712,0.18140127388535032

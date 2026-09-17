@@ -1,0 +1,9 @@
+# Pinned to the versions this audit was last run and verified against.
+torch==2.14.0
+transformers==4.57.6
+pandas==3.0.5
+numpy==2.4.6
+matplotlib==3.11.2
+pillow==12.3.0
+jupyter
+nbclient

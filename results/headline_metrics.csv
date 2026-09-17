@@ -1,0 +1,10 @@
+metric,value
+images,"3,925"
+"accuracy, original",79.36%
+"accuracy, bolero",74.14%
+accuracy change,-5.22 pp
+relative error increase,+25.3%
+predictions changed,15.64%
+"mean confidence, original",0.848
+"mean confidence, bolero",0.811
+mean confidence change,-0.037
