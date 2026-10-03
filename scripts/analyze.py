@@ -1,6 +1,6 @@
 """Stage 4 - figures and a markdown summary from whichever stages have been run.
 
-Reads results/{diagnostic,detector,restoration,cue_sweep}/ and writes
+Reads results/{diagnostic,detector,tuning,restoration,cue_sweep}/ and writes
 results/figures/*.png and results/SUMMARY.md.
 """
 
@@ -58,6 +58,167 @@ def md_table(df: pd.DataFrame, floatfmt: str = ".3f") -> str:
     return "\n".join(lines)
 
 
+def method_label(method: str, source: str) -> str:
+    return method if source in ("unused", "perturbed") else f"{method} [{source} depth]"
+
+
+def main_methods(summary: pd.DataFrame) -> list[str]:
+    """Deployable methods: no oracle depth, no control depth, no detector+cue combos."""
+    present = set(summary["method"])
+    ordered = [m for m in METHOD_ORDER if m in present]
+    ordered += sorted(m for m in present if m.startswith("baseline:"))
+    ordered += sorted(m for m in present if m.startswith("cue:"))
+    return ordered
+
+
+def pooled(summary: pd.DataFrame, by: list[str]) -> pd.DataFrame:
+    """Aggregate per-condition rows, pooling counts so rates are over all images."""
+    s = summary.assign(n_wrong=summary["n"] * (1 - summary["acc_perturbed"]),
+                       n_correct=summary["n"] * summary["acc_perturbed"],
+                       agree_before_n=summary["n"] * summary["agree_clean_before"],
+                       agree_after_n=summary["n"] * summary["agree_clean_after"])
+    g = s.groupby(by, sort=False).agg(
+        n=("n", "sum"), acc_perturbed=("acc_perturbed", "mean"), acc_restored=("acc_restored", "mean"),
+        delta_pp=("delta_pp", "mean"), wrong_to_correct=("wrong_to_correct", "sum"),
+        correct_to_wrong=("correct_to_wrong", "sum"), n_wrong=("n_wrong", "sum"),
+        n_correct=("n_correct", "sum"), agree_before_n=("agree_before_n", "sum"),
+        agree_after_n=("agree_after_n", "sum"), back_to_clean_pred=("back_to_clean_pred", "sum"),
+        back_to_clean_pred_wrong=("back_to_clean_pred_wrong", "sum"), restore_ms=("restore_ms", "mean"),
+    ).reset_index()
+    g["fix_rate"] = g["wrong_to_correct"] / g["n_wrong"]
+    g["break_rate"] = g["correct_to_wrong"] / g["n_correct"]
+    g["agree_clean_before"] = g["agree_before_n"] / g["n"]
+    g["agree_clean_after"] = g["agree_after_n"] / g["n"]
+    return g.drop(columns=["n_wrong", "n_correct", "agree_before_n", "agree_after_n"])
+
+
+def restoration_section(rest: Path, figures: Path) -> list[str]:
+    summary = pd.read_csv(rest / "summary.csv")
+    run = json.loads((rest / "run.json").read_text()) if (rest / "run.json").exists() else {}
+    perturbed = summary[summary["perturbation"] != "clean"]
+    on_clean = summary[summary["perturbation"] == "clean"]
+    main = main_methods(summary)
+    is_main = summary["method"].isin(main) & summary["depth_source"].isin(["unused", "perturbed"])
+    report = [
+        "## Stage 3: restoration", "",
+        f"Evaluated on {run.get('images', '?')} val images. Strengths: {run.get('strength_status', '?')}.",
+        "Depth for every cue in the main results is re-estimated on the perturbed input. "
+        "Accuracy, fixes and breaks are against the ground-truth label; "
+        "`agree_clean_*` is agreement with the classifier's prediction on the clean image.",
+        "",
+    ]
+
+    # Accuracy change per perturbation, deployable methods only.
+    gain = (summary[is_main & (summary["method"] != "none")]
+            .groupby(["perturbation", "method"])["delta_pp"].mean()
+            .unstack("method").reindex(columns=[m for m in main if m != "none"]))
+    gain = gain.reindex(["clean"] + [p for p in gain.index if p != "clean"])
+    heatmap(gain, "Accuracy change from restoration (mean over severities)",
+            "Δ top-1 accuracy vs perturbed input (pp)",
+            figures / "restoration_gain.png", diverging=True, fmt=".1f")
+    report += ["Row `clean` shows what each method does to unperturbed inputs (the cost of a false alarm).",
+               "", "![](figures/restoration_gain.png)", ""]
+
+    # Overall, over all perturbed conditions.
+    overall = pooled(perturbed, ["method", "depth_source"])
+    overall.insert(0, "label", [method_label(m, s) for m, s in zip(overall["method"], overall["depth_source"])])
+    cols = ["label", "acc_perturbed", "acc_restored", "delta_pp", "fix_rate", "break_rate",
+            "wrong_to_correct", "correct_to_wrong", "agree_clean_before", "agree_clean_after",
+            "back_to_clean_pred", "back_to_clean_pred_wrong", "restore_ms"]
+    save_csv(overall, rest / "overall.csv")
+    report += [
+        "Across all perturbations and severities. `back_to_clean_pred_wrong` counts images that returned "
+        "to the clean prediction but are still wrong, because the clean prediction was wrong too.", "",
+        md_table(overall[overall["method"] != "none"][cols]), "",
+        "On clean inputs:", "",
+        md_table(on_clean[on_clean["method"] != "none"]
+                 .assign(label=lambda d: [method_label(m, s) for m, s in zip(d["method"], d["depth_source"])])
+                 [["label", "delta_pp", "changed_rate", "correct_to_wrong", "wrong_to_correct"]]
+                 .rename(columns={"delta_pp": "delta_pp_vs_clean"})),
+        "",
+    ]
+
+    # Fix and break rates by perturbation x severity.
+    by_cond = summary[is_main & (summary["method"] != "none") & (summary["perturbation"] != "clean")].copy()
+    by_cond["condition"] = by_cond["perturbation"] + " L" + by_cond["level"].astype(str)
+    for metric, title in [("fix_rate", "Fixed: wrong -> correct (share of wrong inputs)"),
+                          ("break_rate", "Broken: correct -> wrong (share of correct inputs)")]:
+        table = by_cond.pivot_table(index="condition", columns="method", values=metric, sort=False)
+        table = table.reindex(columns=[m for m in main if m in table.columns])
+        heatmap(table, title, metric.replace("_", " "), figures / f"restoration_{metric}.png",
+                diverging=False, fmt=".2f")
+    report += ["Fixes and breaks by perturbation and severity (per-condition counts are in "
+               "`restoration/summary.csv`):", "",
+               "![](figures/restoration_fix_rate.png)", "", "![](figures/restoration_break_rate.png)", ""]
+
+    # Does depth information matter? Same cue, three depth maps.
+    cue_rows = perturbed[perturbed["method"].str.startswith("cue:")]
+    if cue_rows["depth_source"].nunique() > 1:
+        by_source = cue_rows.groupby(["method", "depth_source"])["delta_pp"].mean().unstack("depth_source")
+        by_source = by_source.reindex(columns=[c for c in ["perturbed", "clean", "mismatched"]
+                                               if c in by_source.columns])
+        heatmap(by_source, "Cue accuracy change by depth source", "Δ top-1 accuracy vs perturbed input (pp)",
+                figures / "cue_depth_source.png", diverging=True, fmt=".2f")
+        report += [
+            "### Does the depth map matter?", "",
+            "Each cue with depth re-estimated on the perturbed input (deployable), the clean image's depth "
+            "(idealized) and an unrelated image's depth (control). If `mismatched` matches `perturbed`, "
+            "the cue's effect does not come from depth information.", "",
+            "![](figures/cue_depth_source.png)", "", md_table(by_source.reset_index()), "",
+        ]
+
+    # Detector restoration followed by each cue: which components add value?
+    combos = overall[overall["method"].str.startswith("detector+cue:")]
+    if len(combos):
+        det = overall[overall["method"] == "detector_classical"]
+        report += ["### Components: detector restoration alone vs. followed by each cue", "",
+                   md_table(pd.concat([det, combos])[["label", "acc_restored", "delta_pp", "fix_rate",
+                                                      "break_rate"]]), ""]
+
+    report += depth_reliability_section(rest)
+    return report
+
+
+def depth_reliability_section(rest: Path) -> list[str]:
+    """Fix and break rates of each cue, binned by how well perturbed depth matches clean depth."""
+    path = rest / "records.csv.gz"
+    if not path.exists():
+        return []
+    df = pd.read_csv(path)
+    if "depth_rank_corr" not in df:
+        return []
+    keys = ["image_id", "perturbation", "level"]
+    df = df[df["perturbation"] != "clean"]
+    ref = df[df["method"] == "none"][keys + ["out_correct", "depth_rank_corr"]]
+    ref = ref.rename(columns={"out_correct": "before_ok"}).dropna(subset=["depth_rank_corr"])
+    ref["depth_bin"] = pd.qcut(ref["depth_rank_corr"], 4, duplicates="drop")
+    cues = df[df["method"].str.startswith("cue:") & (df["depth_source"] == "perturbed")]
+    m = cues[keys + ["method", "out_correct"]].merge(ref, on=keys)
+    m["fixed"] = ~m["before_ok"] & m["out_correct"]
+    m["broken"] = m["before_ok"] & ~m["out_correct"]
+    rows = []
+    for (method, bin_), g in m.groupby(["method", "depth_bin"], observed=True):
+        rows.append({"method": method, "depth_rank_corr": str(bin_), "n": len(g),
+                     "fix_rate": g["fixed"].sum() / max(1, (~g["before_ok"]).sum()),
+                     "break_rate": g["broken"].sum() / max(1, g["before_ok"].sum()),
+                     "delta_pp": 100.0 * (g["out_correct"].mean() - g["before_ok"].mean())})
+    table = pd.DataFrame(rows)
+    save_csv(table, rest / "depth_reliability.csv")
+    bins = ref.groupby("depth_bin", observed=True).agg(acc_perturbed=("before_ok", "mean"),
+                                                       n=("before_ok", "size")).reset_index()
+    return [
+        "### Do failures coincide with unreliable depth?", "",
+        "Depth reliability is the Spearman correlation between depth estimated on the perturbed input "
+        "and on the clean image (quartile bins over all perturbed inputs).", "",
+        md_table(bins.assign(depth_bin=bins["depth_bin"].astype(str))), "",
+        md_table(table), "",
+    ]
+
+
+def save_csv(df: pd.DataFrame, path: Path) -> None:
+    df.to_csv(path, index=False)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--results", type=Path, default=RESULTS_DIR)
@@ -108,35 +269,28 @@ def main() -> None:
             "", "![](figures/detector_confusion.png)", "",
         ]
 
+    # ---- Strength tuning (dev split) ----
+    tuning = args.results / "tuning"
+    if (tuning / "strengths.json").exists():
+        meta = json.loads((tuning / "strengths.json").read_text())
+        tsum = pd.read_csv(tuning / "summary.csv")
+        chosen = pd.DataFrame([{"method": m, "strength": s, "constraint_met": meta["constraint_met"][m]}
+                               for m, s in meta["strengths"].items()])
+        chosen = chosen.merge(tsum, on=["method", "strength"])
+        report += [
+            "## Strength selection (development data)", "",
+            f"Strengths were chosen on {meta['images']} `{meta['split']}`-split images, never on the val "
+            f"images used below. Rule: best mean accuracy over all perturbed conditions, among strengths "
+            f"that cost at most {meta['max_clean_drop_pp']} pp on clean images.", "",
+            md_table(chosen[["method", "strength", "acc_perturbed", "gain_pp", "clean_drop_pp",
+                             "constraint_met"]]),
+            "",
+        ]
+
     # ---- Stage 3: restoration ----
     rest = args.results / "restoration"
     if (rest / "summary.csv").exists():
-        summary = pd.read_csv(rest / "summary.csv")
-        methods = [m for m in METHOD_ORDER if m in set(summary["method"])]
-        methods += sorted(m for m in summary["method"].unique() if m not in methods and m != "none")
-        gain = (summary[summary["method"] != "none"]
-                .groupby(["perturbation", "method"])["delta_pp"].mean()
-                .unstack("method").reindex(columns=methods))
-        rows = ["clean"] + [p for p in gain.index if p != "clean"]
-        gain = gain.reindex(rows)
-        heatmap(gain, "Accuracy change from restoration (mean over severities)",
-                "Δ top-1 accuracy vs perturbed input (pp)",
-                figures / "restoration_gain.png", diverging=True, fmt=".1f")
-        overall = (summary[summary["perturbation"] != "clean"]
-                   .groupby("method")[["acc_perturbed", "acc_restored", "delta_pp", "recovery_rate",
-                                        "wrong_to_correct", "correct_to_wrong", "restore_ms"]]
-                   .agg({"acc_perturbed": "mean", "acc_restored": "mean", "delta_pp": "mean",
-                         "recovery_rate": "mean", "wrong_to_correct": "sum",
-                         "correct_to_wrong": "sum", "restore_ms": "mean"})
-                   .reset_index())
-        on_clean = summary[summary["perturbation"] == "clean"][["method", "delta_pp", "changed_rate"]]
-        report += [
-            "## Stage 3: restoration", "",
-            "Row `clean` shows what each method does to unperturbed inputs (the cost of a false alarm).",
-            "", "![](figures/restoration_gain.png)", "",
-            "Across all perturbations and severities:", "", md_table(overall), "",
-            "On clean inputs:", "", md_table(on_clean.rename(columns={"delta_pp": "delta_pp_vs_clean"})), "",
-        ]
+        report += restoration_section(rest, figures)
 
     # ---- Cue sweep ----
     sweep = args.results / "cue_sweep"

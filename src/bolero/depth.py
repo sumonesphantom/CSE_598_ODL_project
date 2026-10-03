@@ -9,10 +9,11 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
+import cv2
 import numpy as np
 import torch
 import torch.nn.functional as F
-from scipy import ndimage
+from scipy import ndimage, stats
 from transformers import AutoImageProcessor, AutoModelForDepthEstimation
 
 from .config import CACHE_DIR, DEPTH_MODEL, get_device
@@ -100,3 +101,23 @@ def far_mask(depth: np.ndarray, fraction: float) -> np.ndarray:
 
 def smooth(depth: np.ndarray, sigma: float) -> np.ndarray:
     return ndimage.gaussian_filter(depth, sigma=sigma).astype(np.float32)
+
+
+def resize_depth(depth: np.ndarray, shape: tuple[int, int]) -> np.ndarray:
+    """Resize a depth map to (H, W), e.g. to borrow another image's depth as a control."""
+    if depth.shape == tuple(shape):
+        return depth
+    return cv2.resize(depth, (shape[1], shape[0]), interpolation=cv2.INTER_LINEAR).astype(np.float32)
+
+
+def rank_agreement(depth: np.ndarray, reference: np.ndarray, stride: int = 2) -> float:
+    """Spearman correlation between two depth maps (scale- and shift-invariant).
+
+    Relative depth has no fixed scale or offset, so rank correlation is the
+    natural agreement measure. 1 = same depth ordering, 0 = unrelated.
+    """
+    a = depth[::stride, ::stride].ravel()
+    b = reference[::stride, ::stride].ravel()
+    if np.ptp(a) == 0 or np.ptp(b) == 0:
+        return float("nan")
+    return float(stats.spearmanr(a, b).statistic)

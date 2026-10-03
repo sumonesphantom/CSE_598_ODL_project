@@ -2,8 +2,9 @@
 *.docx
 ~$*
 
-# Proposal drafts
+# Proposal drafts and reviewer feedback
 proposal_draft.md
+reviewer_comments.md
 
 # Reference material
 ref/

@@ -55,3 +55,37 @@ def recovery_rate(acc_clean: float, acc_perturbed: float, acc_restored: float) -
     """Fraction of the perturbation's accuracy loss that restoration wins back."""
     lost = acc_clean - acc_perturbed
     return float("nan") if lost <= 0 else (acc_restored - acc_perturbed) / lost
+
+
+def transitions(
+    before_ok: np.ndarray,
+    after_ok: np.ndarray,
+    before_pred: np.ndarray,
+    after_pred: np.ndarray,
+    clean_pred: np.ndarray,
+) -> dict:
+    """Correctness and agreement transitions from a reference input to a processed one.
+
+    Correctness is measured against the ground-truth label. Agreement is measured
+    against the classifier's prediction on the clean image, which is itself wrong
+    for some images: `back_to_clean_pred_wrong` counts processed images that
+    returned to the clean prediction without becoming correct.
+    """
+    before_ok, after_ok = np.asarray(before_ok, bool), np.asarray(after_ok, bool)
+    before_agree = np.asarray(before_pred) == np.asarray(clean_pred)
+    after_agree = np.asarray(after_pred) == np.asarray(clean_pred)
+    fixed, broken = ~before_ok & after_ok, before_ok & ~after_ok
+    back = ~before_agree & after_agree
+    n_wrong, n_correct = int((~before_ok).sum()), int(before_ok.sum())
+    return {
+        "wrong_to_correct": int(fixed.sum()),
+        "correct_to_wrong": int(broken.sum()),
+        "net_fixed": int(fixed.sum() - broken.sum()),
+        "fix_rate": fixed.sum() / n_wrong if n_wrong else float("nan"),
+        "break_rate": broken.sum() / n_correct if n_correct else float("nan"),
+        "agree_clean_before": before_agree.mean(),
+        "agree_clean_after": after_agree.mean(),
+        "back_to_clean_pred": int(back.sum()),
+        "back_to_clean_pred_wrong": int((back & ~after_ok).sum()),
+        "left_clean_pred": int((before_agree & ~after_agree).sum()),
+    }
