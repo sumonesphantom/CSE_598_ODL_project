@@ -1,5 +1,6 @@
 # Last verified with Python 3.10, torch 2.9.1, transformers 4.57.6 (Apple M4 Pro, MPS).
 torch>=2.2
+torchvision>=0.17   # JPEG encode/decode in perturbations
 transformers>=4.45    # Depth-Anything-V2 support
 numpy>=1.26
 pandas>=2.2
