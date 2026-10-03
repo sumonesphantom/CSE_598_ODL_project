@@ -14,6 +14,7 @@ import pandas as pd
 
 import _bootstrap  # noqa: F401
 from bolero.config import RESULTS_DIR
+from bolero.perturbations import HELD_OUT
 from bolero.plotting import (
     DIVERGING, INK_PRIMARY, SEQUENTIAL, apply_style, diverging_norm, strip_axes,
 )
@@ -95,7 +96,8 @@ def pooled(summary: pd.DataFrame, by: list[str]) -> pd.DataFrame:
 def restoration_section(rest: Path, figures: Path) -> list[str]:
     summary = pd.read_csv(rest / "summary.csv")
     run = json.loads((rest / "run.json").read_text()) if (rest / "run.json").exists() else {}
-    perturbed = summary[summary["perturbation"] != "clean"]
+    held_out = summary[summary["perturbation"].isin(HELD_OUT)]
+    perturbed = summary[(summary["perturbation"] != "clean") & ~summary["perturbation"].isin(HELD_OUT)]
     on_clean = summary[summary["perturbation"] == "clean"]
     main = main_methods(summary)
     is_main = summary["method"].isin(main) & summary["depth_source"].isin(["unused", "perturbed"])
@@ -137,6 +139,19 @@ def restoration_section(rest: Path, figures: Path) -> list[str]:
                  .rename(columns={"delta_pp": "delta_pp_vs_clean"})),
         "",
     ]
+
+    if len(held_out):
+        stress = pooled(held_out, ["perturbation", "method", "depth_source"])
+        stress = stress[stress["method"].isin(main) & stress["depth_source"].isin(["unused", "perturbed"])]
+        stress.insert(1, "label", [method_label(m, s) for m, s in zip(stress["method"], stress["depth_source"])])
+        save_csv(stress, rest / "held_out.csv")
+        report += [
+            "### Held-out stress test", "",
+            f"Perturbations never seen by the detector or strength tuning ({', '.join(HELD_OUT)}). "
+            "They are excluded from the pooled table above. There is no oracle plan for them.", "",
+            md_table(stress[["perturbation", "label", "acc_perturbed", "acc_restored", "delta_pp",
+                             "fix_rate", "break_rate"]]), "",
+        ]
 
     # Fix and break rates by perturbation x severity.
     by_cond = summary[is_main & (summary["method"] != "none") & (summary["perturbation"] != "clean")].copy()
@@ -188,7 +203,7 @@ def depth_reliability_section(rest: Path) -> list[str]:
     if "depth_rank_corr" not in df:
         return []
     keys = ["image_id", "perturbation", "level"]
-    df = df[df["perturbation"] != "clean"]
+    df = df[(df["perturbation"] != "clean") & ~df["perturbation"].isin(HELD_OUT)]
     ref = df[df["method"] == "none"][keys + ["out_correct", "depth_rank_corr"]]
     ref = ref.rename(columns={"out_correct": "before_ok"}).dropna(subset=["depth_rank_corr"])
     ref["depth_bin"] = pd.qcut(ref["depth_rank_corr"], 4, duplicates="drop")

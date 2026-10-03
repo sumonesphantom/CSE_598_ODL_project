@@ -6,6 +6,10 @@ boundaries, the entity itself, or its context) is degraded.
 
 Depth-selective perturbations use the clean image's depth map, i.e. the
 perturbation "knows" where the entity is. Restoration never sees that depth map.
+
+HELD_OUT holds stress-test perturbations that are evaluated in the diagnostic
+and restoration stages but never used to train the detector or tune strengths,
+so they measure how the system copes with distortions it was not built for.
 """
 
 from __future__ import annotations
@@ -14,8 +18,11 @@ import zlib
 from dataclasses import dataclass
 from typing import Callable
 
-import cv2
 import numpy as np
+import torch
+import torch.nn.functional as F
+from torchvision.io import decode_jpeg, encode_jpeg
+from torchvision.transforms import RandAugment
 
 from .depth import boundary_mask, far_mask, near_mask
 
@@ -50,8 +57,28 @@ def rng_for(image_id: str, name: str, level: int, seed: int) -> np.random.Genera
     return np.random.default_rng([seed, zlib.crc32(f"{image_id}|{name}|{level}".encode())])
 
 
+def _gaussian_kernel(sigma: float) -> torch.Tensor:
+    # Same kernel size rule as cv2.GaussianBlur(ksize=(0, 0)) on float32 images.
+    ksize = int(round(sigma * 8 + 1)) | 1
+    x = torch.arange(ksize, dtype=torch.float64) - (ksize - 1) / 2
+    k = torch.exp(-(x ** 2) / (2 * sigma ** 2))
+    return (k / k.sum()).float()
+
+
 def _blur(image: np.ndarray, sigma: float) -> np.ndarray:
-    return cv2.GaussianBlur(image, (0, 0), sigmaX=sigma, sigmaY=sigma)
+    """Separable Gaussian blur of an (H, W, C) image with reflect-101 borders."""
+    k = _gaussian_kernel(sigma)
+    pad = len(k) // 2
+    x = torch.from_numpy(np.ascontiguousarray(image, dtype=np.float32)).permute(2, 0, 1)[:, None]
+    x = F.conv2d(F.pad(x, (pad, pad, 0, 0), mode="reflect"), k.view(1, 1, 1, -1))
+    x = F.conv2d(F.pad(x, (0, 0, pad, pad), mode="reflect"), k.view(1, 1, -1, 1))
+    return x[:, 0].permute(1, 2, 0).numpy()
+
+
+def _dilate3(mask: np.ndarray) -> np.ndarray:
+    """Binary dilation with a 3x3 square."""
+    x = torch.from_numpy(mask.astype(np.float32))[None, None]
+    return F.max_pool2d(x, 3, stride=1, padding=1)[0, 0].numpy() > 0
 
 
 def _luminance(image: np.ndarray) -> np.ndarray:
@@ -114,19 +141,18 @@ def gaussian_noise(image, depth, std, rng):
 
 
 def jpeg_compression(image, depth, quality, rng):
-    bgr = cv2.cvtColor(np.round(np.clip(image, 0, 1) * 255).astype(np.uint8), cv2.COLOR_RGB2BGR)
-    ok, buf = cv2.imencode(".jpg", bgr, [cv2.IMWRITE_JPEG_QUALITY, int(quality)])
-    assert ok
-    decoded = cv2.imdecode(buf, cv2.IMREAD_COLOR)
-    return cv2.cvtColor(decoded, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
+    rgb = np.round(np.clip(image, 0, 1) * 255).astype(np.uint8)
+    x = torch.from_numpy(rgb).permute(2, 0, 1).contiguous()
+    decoded = decode_jpeg(encode_jpeg(x, quality=int(quality)))
+    return decoded.permute(1, 2, 0).numpy().astype(np.float32) / 255.0
 
 
 # ---- Boundary operations (depth-guided) -------------------------------------
 
 def boundary_blur(image, depth, fraction, rng):
     """Blur the strongest depth boundaries, softening the entity outline."""
-    mask = cv2.dilate(boundary_mask(depth, fraction).astype(np.uint8), np.ones((3, 3), np.uint8))
-    return np.where(mask[..., None] > 0, _blur(image, 3.0), image)
+    mask = _dilate3(boundary_mask(depth, fraction))
+    return np.where(mask[..., None], _blur(image, 3.0), image)
 
 
 def boundary_erase(image, depth, fraction, rng):
@@ -152,6 +178,18 @@ def background_removal(image, depth, fraction, rng):
     return _fill(image, far_mask(depth, fraction), GRAY)
 
 
+# ---- Held-out stress tests ------------------------------------------------------
+
+def rand_augment(image, depth, magnitude, rng):
+    """torchvision RandAugment: two randomly chosen ops at `magnitude` (out of 30)."""
+    x = torch.from_numpy(np.round(np.clip(image, 0, 1) * 255).astype(np.uint8)).permute(2, 0, 1).contiguous()
+    # RandAugment draws from torch's global RNG; seed it from `rng` without disturbing it.
+    with torch.random.fork_rng(devices=[]):
+        torch.manual_seed(int(rng.integers(0, 2**31)))
+        x = RandAugment(num_ops=2, magnitude=int(magnitude))(x)
+    return x.permute(1, 2, 0).numpy().astype(np.float32) / 255.0
+
+
 PERTURBATIONS: dict[str, Perturbation] = {
     p.name: p
     for p in [
@@ -171,5 +209,14 @@ PERTURBATIONS: dict[str, Perturbation] = {
         Perturbation("background_removal", "depth_selective", (0.30, 0.50, 0.70), background_removal, True),
     ]
 }
+
+HELD_OUT: dict[str, Perturbation] = {
+    p.name: p
+    for p in [
+        Perturbation("rand_augment", "mixed", (6, 12, 18), rand_augment),
+    ]
+}
+
+ALL_PERTURBATIONS: dict[str, Perturbation] = {**PERTURBATIONS, **HELD_OUT}
 
 LEVELS = (1, 2, 3)
