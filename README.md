@@ -156,6 +156,13 @@ Boundary and depth-selective perturbations use the clean image's depth map to fi
 the entity, which makes them the adversarial half of the study. Restoration never
 gets that map.
 
+**Held-out stress test.** `rand_augment` applies torchvision's
+[RandAugment](https://docs.pytorch.org/vision/main/generated/torchvision.transforms.RandAugment.html)
+(2 random ops at magnitude 6 / 12 / 18 out of 30). It runs in Stages 1 and 3 but is
+never used to train the detector or tune strengths, and it has no oracle plan. It
+measures how the system handles distortions it was not built for, and it is
+reported separately from the 14-perturbation headline numbers.
+
 ### The 6 contextual cues ("forced depth perception")
 
 "Forced depth perception" in the project title names the whole approach, not a

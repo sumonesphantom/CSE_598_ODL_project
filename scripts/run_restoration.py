@@ -47,7 +47,7 @@ from bolero.data import list_images, load_image
 from bolero.depth import DepthCache, DepthEstimator, rank_agreement, resize_depth
 from bolero.detection import CLEAN, PerturbationDetector
 from bolero.metrics import psnr, recovery_rate, ssim, transitions
-from bolero.perturbations import LEVELS, PERTURBATIONS, rng_for
+from bolero.perturbations import ALL_PERTURBATIONS, HELD_OUT, LEVELS, rng_for
 from bolero.records import prefixed, save
 from bolero.restoration import restore
 from bolero.tuning import load_strengths, method_key
@@ -65,7 +65,8 @@ def timed(fn, *args):
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--per-class", type=int, default=50)
-    parser.add_argument("--perturbations", nargs="*", default=list(PERTURBATIONS), choices=list(PERTURBATIONS))
+    parser.add_argument("--perturbations", nargs="*", default=list(ALL_PERTURBATIONS),
+                        choices=list(ALL_PERTURBATIONS))
     parser.add_argument("--cues", nargs="*", default=list(CUES), choices=list(CUES))
     parser.add_argument("--baselines", nargs="*", default=list(BASELINES), choices=list(BASELINES))
     parser.add_argument("--combo-cues", nargs="*", default=list(CUES), choices=list(CUES),
@@ -115,7 +116,8 @@ def main() -> None:
             if name == CLEAN:
                 x = clean
             else:
-                x = PERTURBATIONS[name](clean, level, clean_depth, rng_for(record.image_id, name, level, args.seed))
+                x = ALL_PERTURBATIONS[name](clean, level, clean_depth,
+                                            rng_for(record.image_id, name, level, args.seed))
             cond = {"perturbation": name, "level": level}
 
             depth_ms, perturbed_depth = 0.0, None
@@ -124,7 +126,7 @@ def main() -> None:
                 cond["depth_rank_corr"] = rank_agreement(perturbed_depth, clean_depth)
 
             emit({**cond, "method": "none"}, x, 0.0)
-            if name != CLEAN:
+            if name != CLEAN and name not in HELD_OUT:  # held-out perturbations have no plan
                 oracle, ms = timed(restore, x, name)
                 emit({**cond, "method": "oracle_classical"}, oracle, ms)
 
@@ -209,11 +211,13 @@ def summarize(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def summarize_overall(df: pd.DataFrame) -> pd.DataFrame:
-    perturbed = df[df["perturbation"] != CLEAN]
+    held_out = df["perturbation"].isin(HELD_OUT)
+    perturbed = df[(df["perturbation"] != CLEAN) & ~held_out]
     clean = df[df["perturbation"] == CLEAN]
     by = ["method", "depth_source"]
     return pd.DataFrame({
         "acc_on_perturbed": perturbed.groupby(by, sort=False)["out_correct"].mean(),
+        "acc_on_held_out": df[held_out].groupby(by, sort=False)["out_correct"].mean(),
         "acc_on_clean": clean.groupby(by, sort=False)["out_correct"].mean(),
         "restore_ms": df.groupby(by, sort=False)["restore_ms"].mean(),
     }).reset_index()

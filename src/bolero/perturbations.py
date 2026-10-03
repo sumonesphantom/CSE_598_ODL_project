@@ -6,6 +6,10 @@ boundaries, the entity itself, or its context) is degraded.
 
 Depth-selective perturbations use the clean image's depth map, i.e. the
 perturbation "knows" where the entity is. Restoration never sees that depth map.
+
+HELD_OUT holds stress-test perturbations that are evaluated in the diagnostic
+and restoration stages but never used to train the detector or tune strengths,
+so they measure how the system copes with distortions it was not built for.
 """
 
 from __future__ import annotations
@@ -18,6 +22,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torchvision.io import decode_jpeg, encode_jpeg
+from torchvision.transforms import RandAugment
 
 from .depth import boundary_mask, far_mask, near_mask
 
@@ -173,6 +178,18 @@ def background_removal(image, depth, fraction, rng):
     return _fill(image, far_mask(depth, fraction), GRAY)
 
 
+# ---- Held-out stress tests ------------------------------------------------------
+
+def rand_augment(image, depth, magnitude, rng):
+    """torchvision RandAugment: two randomly chosen ops at `magnitude` (out of 30)."""
+    x = torch.from_numpy(np.round(np.clip(image, 0, 1) * 255).astype(np.uint8)).permute(2, 0, 1).contiguous()
+    # RandAugment draws from torch's global RNG; seed it from `rng` without disturbing it.
+    with torch.random.fork_rng(devices=[]):
+        torch.manual_seed(int(rng.integers(0, 2**31)))
+        x = RandAugment(num_ops=2, magnitude=int(magnitude))(x)
+    return x.permute(1, 2, 0).numpy().astype(np.float32) / 255.0
+
+
 PERTURBATIONS: dict[str, Perturbation] = {
     p.name: p
     for p in [
@@ -192,5 +209,14 @@ PERTURBATIONS: dict[str, Perturbation] = {
         Perturbation("background_removal", "depth_selective", (0.30, 0.50, 0.70), background_removal, True),
     ]
 }
+
+HELD_OUT: dict[str, Perturbation] = {
+    p.name: p
+    for p in [
+        Perturbation("rand_augment", "mixed", (6, 12, 18), rand_augment),
+    ]
+}
+
+ALL_PERTURBATIONS: dict[str, Perturbation] = {**PERTURBATIONS, **HELD_OUT}
 
 LEVELS = (1, 2, 3)

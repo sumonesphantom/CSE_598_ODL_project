@@ -24,7 +24,7 @@ from bolero.config import RESULTS_DIR, SEED
 from bolero.data import list_images, load_image
 from bolero.depth import DepthCache
 from bolero.metrics import compare, psnr, ssim
-from bolero.perturbations import LEVELS, PERTURBATIONS, rng_for
+from bolero.perturbations import ALL_PERTURBATIONS, HELD_OUT, LEVELS, rng_for
 from bolero.records import prefixed, save
 
 KEYS = ["image_id", "wnid", "class_name", "label_index"]
@@ -33,7 +33,8 @@ KEYS = ["image_id", "wnid", "class_name", "label_index"]
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--per-class", type=int, default=None, help="images per class (default: all 3,925)")
-    parser.add_argument("--perturbations", nargs="*", default=list(PERTURBATIONS), choices=list(PERTURBATIONS))
+    parser.add_argument("--perturbations", nargs="*", default=list(ALL_PERTURBATIONS),
+                        choices=list(ALL_PERTURBATIONS))
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--device", default=None)
     parser.add_argument("--seed", type=int, default=SEED)
@@ -54,7 +55,7 @@ def main() -> None:
                 "class_name": record.class_name, "label_index": record.label_index}
         clean.add(meta, image)
         for name in args.perturbations:
-            perturbation = PERTURBATIONS[name]
+            perturbation = ALL_PERTURBATIONS[name]
             for level in LEVELS:
                 t0 = time.perf_counter()
                 out = perturbation(image, level, depth, rng_for(record.image_id, name, level, args.seed))
@@ -78,17 +79,21 @@ def main() -> None:
     save(summary.merge(fidelity, on=["perturbation", "level"]), args.out / "summary.csv")
     save(compare(df, "clean", "pert", ["perturbation", "level", "class_name"]), args.out / "per_class.csv")
 
-    overall = compare(df.assign(all="all"), "clean", "pert", ["all"]).iloc[0]
+    # Headline numbers cover the main perturbation set; held-out stress tests are reported apart.
+    held_out = df["perturbation"].isin(HELD_OUT)
+    overall = compare(df[~held_out].assign(all="all"), "clean", "pert", ["all"]).iloc[0]
     headline = {
         "images": len(records),
-        "records": len(df),
-        "perturbations": len(args.perturbations),
+        "records": int((~held_out).sum()),
+        "perturbations": len([p for p in args.perturbations if p not in HELD_OUT]),
         "levels": len(LEVELS),
         "clean_accuracy": float(clean_df["clean_correct"].mean()),
         "perturbed_accuracy": float(overall["acc_pert"]),
         "prediction_changed_rate": float(overall["changed_rate"]),
         "correct_to_wrong": int(overall["correct_to_wrong"]),
         "wrong_to_correct": int(overall["wrong_to_correct"]),
+        "held_out_accuracy": {name: float(g["pert_correct"].mean())
+                              for name, g in df[held_out].groupby("perturbation")},
         "wall_minutes": elapsed / 60.0,
     }
     (args.out / "headline.json").write_text(json.dumps(headline, indent=2))
