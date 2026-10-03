@@ -1,7 +1,8 @@
 """Cue strength sweep on clean images (extends the thermal / border pilot to every cue).
 
-Each depth-derived cue is applied to clean validation images at strengths
-0.0 .. 1.0. A cue that is safe to use as a restoration step should leave the
+Each depth-derived cue is applied to clean development (train-split) images at
+strengths 0.0 .. 1.0. It runs on the train split so that nothing about strength
+is learned from the val images the restoration study evaluates on. A cue that is safe to use as a restoration step should leave the
 prediction unchanged on clean inputs; the sweep measures where that stops
 being true.
 
@@ -29,6 +30,7 @@ from bolero.records import prefixed, save
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--split", default="train")
     parser.add_argument("--per-class", type=int, default=50)
     parser.add_argument("--strengths", type=float, nargs="*", default=np.round(np.linspace(0, 1, 11), 2).tolist())
     parser.add_argument("--cues", nargs="*", default=list(CUES), choices=list(CUES))
@@ -43,7 +45,7 @@ def main() -> None:
     clean = BatchPredictor(classifier, args.batch_size)
     cued = BatchPredictor(classifier, args.batch_size)
 
-    for record in tqdm(list_images("val", per_class=args.per_class, seed=args.seed), desc="images"):
+    for record in tqdm(list_images(args.split, per_class=args.per_class, seed=args.seed), desc="images"):
         image = load_image(record.path)
         depth = depth_cache.get(record, image)
         meta = {"image_id": record.image_id, "wnid": record.wnid,

@@ -19,3 +19,10 @@ def test_output_valid_and_monotone(name, image, depth):
     strong = apply_cue(name, image, depth, 0.8)
     assert weak.shape == image.shape and 0.0 <= strong.min() and strong.max() <= 1.0
     assert np.abs(strong - image).mean() >= np.abs(weak - image).mean()
+
+
+def test_rank_agreement_is_scale_invariant(depth):
+    from bolero.depth import rank_agreement, resize_depth
+
+    assert rank_agreement(0.5 * depth + 0.2, depth, stride=1) > 0.99
+    assert resize_depth(depth, (48, 64)).shape == (48, 64)

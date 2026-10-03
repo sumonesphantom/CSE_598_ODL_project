@@ -41,14 +41,18 @@ def shadow_reinforcement(image, depth, strength):
     return image * (1.0 - strength * (1.0 - depth)[..., None])
 
 
-def contrast_luminance(image, depth, strength):
-    """CLAHE on lightness, weighted toward the near region."""
+def equalize_lightness(image: np.ndarray) -> np.ndarray:
+    """CLAHE on the L channel of Lab, leaving color untouched."""
     lab = cv2.cvtColor(image.astype(np.float32), cv2.COLOR_RGB2LAB)
     l_u8 = np.round(lab[..., 0] * 255.0 / 100.0).astype(np.uint8)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(4, 4))
-    lab_eq = lab.copy()
-    lab_eq[..., 0] = clahe.apply(l_u8).astype(np.float32) * 100.0 / 255.0
-    equalized = cv2.cvtColor(lab_eq, cv2.COLOR_LAB2RGB)
+    lab[..., 0] = clahe.apply(l_u8).astype(np.float32) * 100.0 / 255.0
+    return cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+
+def contrast_luminance(image, depth, strength):
+    """CLAHE on lightness, weighted toward the near region."""
+    equalized = equalize_lightness(image)
     weight = strength * (0.5 + 0.5 * depth)[..., None]
     return (1.0 - weight) * image + weight * equalized
 
