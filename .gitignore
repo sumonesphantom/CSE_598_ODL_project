@@ -28,3 +28,6 @@ __pycache__/
 .pytest_cache/
 .venv/
 .ipynb_checkpoints/
+
+# Presentation decks (kept locally, not in the repo)
+progress presentation/

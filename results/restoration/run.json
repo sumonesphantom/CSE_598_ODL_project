@@ -1,0 +1,24 @@
+{
+  "split": "val",
+  "images": 500,
+  "per_class": 50,
+  "seed": 42,
+  "strengths_file": "/Users/venkat/Desktop/Masters/ASU/Classes/ODM/CSE_598_ODL_project/results/tuning/strengths.json",
+  "strength_status": "tuned",
+  "strengths": {
+    "cue:border_strengthening": 0.1,
+    "cue:depth_boundary_emphasis": 0.3,
+    "cue:entity_background_separation": 0.1,
+    "cue:shadow_reinforcement": 0.2,
+    "cue:contrast_luminance": 0.2,
+    "cue:thermal_injection": 0.1,
+    "baseline:unsharp": 0.1,
+    "baseline:autocontrast": 0.5,
+    "baseline:clahe": 0.1
+  },
+  "depth_sources": [
+    "perturbed",
+    "clean",
+    "mismatched"
+  ]
+}
