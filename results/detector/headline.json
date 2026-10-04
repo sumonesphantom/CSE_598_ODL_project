@@ -1,0 +1,9 @@
+{
+  "train_samples": 18000,
+  "val_samples": 9000,
+  "threshold": 0.6,
+  "top1_accuracy": 0.8315555555555556,
+  "routed_correctly": 0.7174444444444444,
+  "clean_false_alarm_rate": 0.055,
+  "perturbed_detected_rate": 0.7202380952380952
+}

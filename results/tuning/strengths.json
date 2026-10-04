@@ -1,0 +1,53 @@
+{
+  "strengths": {
+    "baseline:autocontrast": 0.5,
+    "baseline:clahe": 0.1,
+    "baseline:unsharp": 0.1,
+    "cue:border_strengthening": 0.1,
+    "cue:contrast_luminance": 0.2,
+    "cue:depth_boundary_emphasis": 0.3,
+    "cue:entity_background_separation": 0.1,
+    "cue:shadow_reinforcement": 0.2,
+    "cue:thermal_injection": 0.1
+  },
+  "constraint_met": {
+    "baseline:autocontrast": true,
+    "baseline:clahe": true,
+    "baseline:unsharp": true,
+    "cue:border_strengthening": true,
+    "cue:contrast_luminance": true,
+    "cue:depth_boundary_emphasis": true,
+    "cue:entity_background_separation": true,
+    "cue:shadow_reinforcement": true,
+    "cue:thermal_injection": true
+  },
+  "split": "train",
+  "images": 100,
+  "per_class": 10,
+  "seed": 42,
+  "grid": [
+    0.1,
+    0.2,
+    0.3,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "max_clean_drop_pp": 1.0,
+  "perturbations": [
+    "region_removal",
+    "inversion",
+    "grayscale",
+    "low_contrast",
+    "darken",
+    "brighten",
+    "gaussian_blur",
+    "gaussian_noise",
+    "jpeg_compression",
+    "boundary_blur",
+    "boundary_erase",
+    "foreground_blur",
+    "foreground_occlusion",
+    "background_removal"
+  ]
+}
