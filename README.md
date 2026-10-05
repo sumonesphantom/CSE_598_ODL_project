@@ -83,6 +83,8 @@ flowchart TD
     P0 --> PS
     P0 --> PT
     PT["<b>Strength tuning</b><br/>tune_strengths.py<br/>train split only"] --> P3
+    P0 --> PP
+    PP["<b>Plan selection</b><br/>tune_plans.py<br/>train split only"] --> P3
     P1["<b>Stage 1: diagnostic</b><br/>run_diagnostic.py<br/>14 perturbations × 3 severities"] --> P4
     P2["<b>Stage 2: detector</b><br/>train_detector.py<br/>train split → eval on val"] --> P3
     P2 --> P4
@@ -97,6 +99,7 @@ flowchart TD
 | 1 | `run_diagnostic.py` | What does each perturbation do to the classifier? | Accuracy, prediction-change rate, correct→wrong and wrong→correct counts, confidence shift, ECE, PSNR/SSIM |
 | 2 | `train_detector.py` | Can the perturbation be identified from the image alone? | Top-1 detection accuracy, routed-correctly rate, clean false-alarm rate |
 | - | `tune_strengths.py` | Which strength should each cue and baseline use? (train split) | Dev accuracy on perturbed inputs, accuracy lost on clean inputs |
+| - | `tune_plans.py` | Which classical plan should each perturbation use, if any? (train split) | Dev accuracy per candidate plan, gain over pass-through |
 | 3 | `run_restoration.py` | Does preprocessing win recognition back, at what cost, and does depth add anything over simple baselines? | Accuracy vs. ground truth, agreement with the clean prediction, fixes and breaks, recovery rate, latency |
 | - | `run_cue_sweep.py` | At what strength does each cue start changing clean predictions? (train split) | Prediction-change rate vs. strength |
 | 4 | `analyze.py` | Summarize everything | Figures in `results/figures/`, `results/SUMMARY.md` |
@@ -235,13 +238,53 @@ Defined in [`src/bolero/restoration.py`](src/bolero/restoration.py). There is on
 
 | Perturbations | Restoration plan |
 |---|---|
-| `region_removal`, `boundary_erase`, `foreground_occlusion`, `background_removal` | Detect the constant-fill mask, then Telea inpainting |
 | `low_contrast`, `darken`, `brighten` | Global auto-levels (same stretch for all channels) |
 | `inversion` | Invert, then auto-levels |
 | `gaussian_blur`, `boundary_blur`, `foreground_blur` | Unsharp mask |
-| `gaussian_noise` | Estimate noise level, then non-local-means denoising |
 | `jpeg_compression` | Bilateral filter (deblocking) |
+| `gaussian_noise` | Bilateral filter (chosen on dev data; see below) |
+| `region_removal`, `boundary_erase`, `foreground_occlusion`, `background_removal` | None: pass through (chosen on dev data; see below) |
 | `grayscale` | None: color is gone, so the image passes through |
+
+**Plans are selected on dev data, and four of them are pass-through.**
+[`scripts/tune_plans.py`](scripts/tune_plans.py) scores every candidate in
+`restoration.CANDIDATES` on perturbed **train**-split images and freezes the
+winner to `results/tuning/plans.json` before Stage 3 runs on val. A candidate
+must beat `pass_through` by at least `--min-gain-pp` (default 0.5 pp) to be
+adopted, because a repair costs latency and a sub-point win is noise at these
+sample sizes. `restoration.PLANS` holds the hand-set fallbacks used if that
+file is missing.
+
+The original hand-set plans were never validated, and two of them cost far more
+accuracy than the perturbation they undid. Measured on 500 val images:
+
+| Perturbation | Hand-set plan | Δ accuracy | Selected plan | Δ accuracy |
+|---|---|---|---|---|
+| `gaussian_noise` | NLM at `h = 0.9 σ` | **−20.5 pp** | bilateral filter | +0.3 pp |
+| `background_removal` | Telea inpainting | **−16.2 pp** | pass through | 0.0 pp |
+| `foreground_occlusion` | Telea inpainting | **−9.1 pp** | pass through | 0.0 pp |
+| `region_removal` | Telea inpainting | **−7.1 pp** | pass through | 0.0 pp |
+| `boundary_erase` | Telea inpainting | **−2.2 pp** | pass through | 0.0 pp |
+
+Two mechanisms, both of them the repair destroying more evidence than it
+recovers:
+
+- **Denoising strips the texture the classifier reads.** The noise estimate
+  itself is accurate (within 1–8 % of true σ at all three severities), so this
+  is not a measurement error. A sweep of 10 denoise variants found no strength
+  that beats leaving the image alone; at `h = 0.9 σ` the plan breaks 65 % of the
+  images it had correct at severity 3.
+- **Inpainting fabricates what it cannot know.** Telea diffuses surrounding
+  texture inward, which is plausible for a small hole. `background_removal`
+  blanks 30–70 % of the frame, so the plan invents most of the image from the
+  rest. `inpaint()` now takes a `max_area` guard, but no threshold beat
+  pass-through on dev data.
+
+So classical restoration helps where a perturbation is invertible (photometric,
+blur, compression: +1.6 to +4.9 pp) and harms where information is destroyed
+(noise, occlusion). `grayscale` was already treated this way; the dev selection
+applies the same principle consistently. A learned denoiser or inpainting model
+is the obvious thing to try where the classical plans cannot help.
 
 ### The perturbation detector
 
@@ -325,6 +368,7 @@ python scripts/cache_depth.py                     # optional: precompute clean d
 python scripts/run_diagnostic.py                  # Stage 1 (add --per-class N to subsample)
 python scripts/train_detector.py                  # Stage 2
 python scripts/tune_strengths.py --per-class 10   # choose strengths on the train split
+python scripts/tune_plans.py --per-class 20       # choose restoration plans on the train split
 python scripts/run_restoration.py --per-class 50  # Stage 3 (val split)
 python scripts/run_cue_sweep.py --per-class 50    # cue stability on clean train images
 python scripts/analyze.py                         # figures + results/SUMMARY.md
@@ -341,6 +385,8 @@ Useful flags (every script takes `--help`):
 | `--combo-cues a b ...` | restoration | Cues applied after detector restoration (default: all; none to skip) |
 | `--depth-sources ...` | restoration | Any of `perturbed clean mismatched` (default: all three) |
 | `--strengths PATH` | restoration | Tuned strengths file (default `results/tuning/strengths.json`) |
+| `--plans PATH` | restoration | Dev-selected plans file (default `results/tuning/plans.json`) |
+| `--min-gain-pp PP` | tune_plans | Gain over pass-through required to adopt a plan (default 0.5 pp) |
 | `--max-clean-drop PP` | tuning | Clean-accuracy budget for choosing a strength (default 1 pp) |
 | `--threshold T` | train_detector | Detector confidence threshold |
 | `--device {cuda,mps,cpu}` | model stages | Force a device |
@@ -376,7 +422,9 @@ results/
 ├── tuning/
 │   ├── records.csv.gz                                                    (gitignored)
 │   ├── summary.csv         per method × strength, dev accuracy (train split)
-│   └── strengths.json      chosen strength per cue and baseline
+│   ├── strengths.json      chosen strength per cue and baseline
+│   ├── plan_summary.csv    per perturbation × candidate plan, dev accuracy
+│   └── plans.json          chosen restoration plan per perturbation
 ├── restoration/
 │   ├── records.csv.gz      one row per image × condition × method × depth source (gitignored)
 │   ├── summary.csv         per perturbation × severity × method × depth source
@@ -416,7 +464,7 @@ CSE_598_ODL_project/
 │   ├── cues.py            the 6 depth-derived contextual cues
 │   ├── baselines.py       depth-free baselines (unsharp, auto-contrast, CLAHE)
 │   ├── tuning.py          strength selection on dev data
-│   ├── restoration.py     classical restoration plans
+│   ├── restoration.py     classical restoration plans and their dev-selected candidates
 │   ├── detection.py       feature extraction and the conservative detector
 │   ├── metrics.py         accuracy, transitions, recovery rate, ECE, PSNR, SSIM
 │   ├── records.py         prediction-table helpers
@@ -466,9 +514,9 @@ To reproduce, open the notebook and run all cells. It writes to `results/audit/`
 ## Known gaps and limitations
 
 1. **We rebuilt the 14-method list from the proposal.** A teammate ran the original 122,450-record diagnostic on their own machine, and this repo doesn't have its exact definitions. If they differ, edit `PERTURBATIONS` in `src/bolero/perturbations.py`. The rest of the pipeline picks up the change.
-2. **Classical restoration stays simple.** Grayscale has no classical inverse, so its plan passes the image through. A learned model, such as a colorizer or a deblurring network, would slot into `restoration.PLANS`.
-3. **Not everything is tuned on dev data yet.** Cue and baseline strengths are chosen on the train split, but the detector threshold (0.6) is still hand-set, as is the denoising strength (next item).
-4. **Nobody has tuned the denoising strength.** The NLM setting (`h = 0.9 × estimated σ`) smears natural textures, and in a 20-image run it cut accuracy on `gaussian_noise` by 30 pp.
+2. **Classical restoration stays simple, and for five perturbations it does nothing.** Grayscale has no classical inverse, and dev selection found that noise and the four constant-fill perturbations have no useful classical plan either, so those pass through. A learned model — a colorizer, a deblurring network, a denoiser, an inpainting model — would slot into `restoration.CANDIDATES` and is the clearest way to improve on pass-through.
+3. **The detector threshold is still hand-set.** Cue and baseline strengths (`tune_strengths.py`) and restoration plans (`tune_plans.py`) are now chosen on the train split, but the detector's 0.6 confidence threshold is not. It caps achievable recovery: only ~61 % of perturbed inputs are routed to restoration at all.
+4. **Plan selection is coarse.** One plan serves all three severities, so it cannot express a severity-dependent response. At severity 3 a mild Gaussian blur beats pass-through on `gaussian_noise` (0.42 vs 0.37) while hurting badly at severity 1 (0.64 vs 0.76); `denoise_adaptive` keys off estimated σ as a proxy but did not clear the adoption margin. Dev selection also used 200 train images, where accuracy differences below ~1 pp are noise.
 5. **The detector misses depth-selective blur.** Blurring the foreground alone leaves global image statistics close to unchanged, and in a small run the detector flagged 5–15 % of those images.
 6. **One model, one dataset.** All results are for ResNet-50 on Imagenette's 10 classes.
 7. **Depth is relative.** Depth-Anything-V2 returns depth normalized per image, so "near" and "far" mean near and far within that image, in no fixed unit.

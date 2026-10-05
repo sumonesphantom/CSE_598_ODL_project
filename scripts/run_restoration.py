@@ -49,11 +49,16 @@ from bolero.detection import CLEAN, PerturbationDetector
 from bolero.metrics import psnr, recovery_rate, ssim, transitions
 from bolero.perturbations import ALL_PERTURBATIONS, HELD_OUT, LEVELS, rng_for
 from bolero.records import prefixed, save
-from bolero.restoration import restore
+from bolero.restoration import load_plans, restore
 from bolero.tuning import load_strengths, method_key
 
 DEPTH_SOURCES = ["perturbed", "clean", "mismatched"]
 NO_DEPTH = "unused"
+
+
+def plans_used(plans: dict) -> dict:
+    """Record each perturbation's plan as a list of operation names, for run.json."""
+    return {name: [getattr(op, "__name__", repr(op)) for op in ops] for name, ops in plans.items()}
 
 
 def timed(fn, *args):
@@ -73,6 +78,8 @@ def main() -> None:
                         help="Cues to run after detector restoration (pass no names to skip)")
     parser.add_argument("--depth-sources", nargs="*", default=DEPTH_SOURCES, choices=DEPTH_SOURCES)
     parser.add_argument("--strengths", type=Path, default=RESULTS_DIR / "tuning" / "strengths.json")
+    parser.add_argument("--plans", type=Path, default=RESULTS_DIR / "tuning" / "plans.json",
+                        help="Dev-selected restoration plans (scripts/tune_plans.py)")
     parser.add_argument("--detector", type=Path, default=RESULTS_DIR / "detector" / "detector.joblib")
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--device", default=None)
@@ -85,6 +92,7 @@ def main() -> None:
     if args.combo_cues and "perturbed" not in args.depth_sources:
         raise SystemExit("--combo-cues needs the 'perturbed' depth source.")
     strengths, strength_status = load_strengths(args.strengths)
+    plans, plan_status = load_plans(args.plans)
     detector = PerturbationDetector.load(args.detector)
     classifier = FrozenClassifier(device=args.device)
     estimator = DepthEstimator(device=args.device)
@@ -127,11 +135,11 @@ def main() -> None:
 
             emit({**cond, "method": "none"}, x, 0.0)
             if name != CLEAN and name not in HELD_OUT:  # held-out perturbations have no plan
-                oracle, ms = timed(restore, x, name)
+                oracle, ms = timed(restore, x, name, plans)
                 emit({**cond, "method": "oracle_classical"}, oracle, ms)
 
             decision, detect_ms = timed(detector.decide, x)
-            routed, restore_ms = timed(restore, x, decision.label)
+            routed, restore_ms = timed(restore, x, decision.label, plans)
             detect_meta = {"detected": decision.label, "detected_raw": decision.predicted,
                            "detected_prob": decision.probability}
             emit({**cond, "method": "detector_classical", **detect_meta}, routed, detect_ms + restore_ms)
@@ -166,9 +174,10 @@ def main() -> None:
     (args.out / "run.json").write_text(json.dumps({
         "split": "val", "images": len(records), "per_class": args.per_class, "seed": args.seed,
         "strengths_file": str(args.strengths), "strength_status": strength_status,
+        "plans_file": str(args.plans), "plan_status": plan_status, "plans": plans_used(plans),
         "strengths": strengths, "depth_sources": args.depth_sources,
     }, indent=2))
-    print(f"Strengths: {strength_status}")
+    print(f"Strengths: {strength_status}; plans: {plan_status}")
     print(summarize_overall(df).to_string(index=False))
 
 

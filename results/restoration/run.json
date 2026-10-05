@@ -3,17 +3,55 @@
   "images": 500,
   "per_class": 50,
   "seed": 42,
-  "strengths_file": "/Users/venkat/Desktop/Masters/ASU/Classes/ODM/CSE_598_ODL_project/results/tuning/strengths.json",
+  "strengths_file": "D:\\ASU\\Third semester\\Operationalization of DL\\Group Project\\Implementation\\Phase 2_Progress Presentation\\CSE_598_ODL_project\\results\\tuning\\strengths.json",
   "strength_status": "tuned",
+  "plans_file": "D:\\ASU\\Third semester\\Operationalization of DL\\Group Project\\Implementation\\Phase 2_Progress Presentation\\CSE_598_ODL_project\\results\\tuning\\plans.json",
+  "plan_status": "tuned",
+  "plans": {
+    "clean": [],
+    "region_removal": [],
+    "inversion": [
+      "invert",
+      "auto_levels"
+    ],
+    "grayscale": [],
+    "low_contrast": [
+      "auto_levels"
+    ],
+    "darken": [
+      "auto_levels"
+    ],
+    "brighten": [
+      "auto_levels"
+    ],
+    "gaussian_blur": [
+      "sharpen"
+    ],
+    "gaussian_noise": [
+      "deblock"
+    ],
+    "jpeg_compression": [
+      "deblock"
+    ],
+    "boundary_blur": [
+      "sharpen"
+    ],
+    "boundary_erase": [],
+    "foreground_blur": [
+      "sharpen"
+    ],
+    "foreground_occlusion": [],
+    "background_removal": []
+  },
   "strengths": {
     "cue:border_strengthening": 0.1,
-    "cue:depth_boundary_emphasis": 0.3,
+    "cue:depth_boundary_emphasis": 0.1,
     "cue:entity_background_separation": 0.1,
     "cue:shadow_reinforcement": 0.2,
-    "cue:contrast_luminance": 0.2,
+    "cue:contrast_luminance": 0.1,
     "cue:thermal_injection": 0.1,
     "baseline:unsharp": 0.1,
-    "baseline:autocontrast": 0.5,
+    "baseline:autocontrast": 0.3,
     "baseline:clahe": 0.1
   },
   "depth_sources": [

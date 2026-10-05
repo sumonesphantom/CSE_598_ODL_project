@@ -95,68 +95,68 @@ Across all perturbations and severities. `back_to_clean_pred_wrong` counts image
 
 | label | acc_perturbed | acc_restored | delta_pp | fix_rate | break_rate | wrong_to_correct | correct_to_wrong | agree_clean_before | agree_clean_after | back_to_clean_pred | back_to_clean_pred_wrong | restore_ms |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| oracle_classical | 0.652 | 0.624 | -2.867 | 0.099 | 0.097 | 724 | 1326 | 0.748 | 0.727 | 1036 | 420 | 3.742 |
-| detector_classical | 0.652 | 0.628 | -2.390 | 0.071 | 0.074 | 517 | 1019 | 0.748 | 0.732 | 780 | 339 | 26.623 |
-| baseline:unsharp | 0.652 | 0.650 | -0.248 | 0.036 | 0.023 | 262 | 314 | 0.748 | 0.745 | 328 | 119 | 0.355 |
-| baseline:autocontrast | 0.652 | 0.657 | 0.419 | 0.034 | 0.012 | 248 | 160 | 0.748 | 0.756 | 358 | 145 | 0.711 |
-| baseline:clahe | 0.652 | 0.652 | -0.014 | 0.023 | 0.013 | 170 | 173 | 0.748 | 0.749 | 228 | 95 | 0.671 |
-| cue:border_strengthening | 0.652 | 0.651 | -0.129 | 0.026 | 0.016 | 188 | 215 | 0.748 | 0.746 | 224 | 71 | 44.355 |
-| cue:depth_boundary_emphasis | 0.652 | 0.626 | -2.614 | 0.055 | 0.070 | 405 | 954 | 0.748 | 0.712 | 459 | 168 | 44.516 |
-| cue:entity_background_separation | 0.652 | 0.652 | 0.014 | 0.033 | 0.017 | 240 | 237 | 0.748 | 0.746 | 286 | 95 | 44.476 |
-| cue:shadow_reinforcement | 0.652 | 0.649 | -0.290 | 0.045 | 0.029 | 331 | 392 | 0.748 | 0.742 | 398 | 132 | 44.234 |
-| cue:contrast_luminance | 0.652 | 0.652 | -0.067 | 0.031 | 0.017 | 223 | 237 | 0.748 | 0.748 | 290 | 109 | 45.018 |
-| cue:thermal_injection | 0.652 | 0.624 | -2.805 | 0.070 | 0.081 | 514 | 1103 | 0.748 | 0.705 | 562 | 207 | 44.606 |
-| cue:border_strengthening [clean depth] | 0.652 | 0.652 | -0.024 | 0.029 | 0.016 | 213 | 218 | 0.748 | 0.746 | 246 | 65 | 0.197 |
-| cue:depth_boundary_emphasis [clean depth] | 0.652 | 0.634 | -1.805 | 0.068 | 0.064 | 496 | 875 | 0.748 | 0.723 | 579 | 189 | 0.389 |
-| cue:entity_background_separation [clean depth] | 0.652 | 0.653 | 0.062 | 0.038 | 0.019 | 277 | 264 | 0.748 | 0.747 | 325 | 98 | 0.354 |
-| cue:shadow_reinforcement [clean depth] | 0.652 | 0.651 | -0.105 | 0.054 | 0.030 | 393 | 415 | 0.748 | 0.744 | 466 | 145 | 0.108 |
-| cue:contrast_luminance [clean depth] | 0.652 | 0.652 | -0.029 | 0.030 | 0.017 | 222 | 228 | 0.748 | 0.748 | 291 | 113 | 0.876 |
-| cue:thermal_injection [clean depth] | 0.652 | 0.628 | -2.395 | 0.080 | 0.079 | 586 | 1089 | 0.748 | 0.709 | 608 | 180 | 0.471 |
-| cue:border_strengthening [mismatched depth] | 0.652 | 0.647 | -0.557 | 0.034 | 0.027 | 248 | 365 | 0.748 | 0.736 | 252 | 80 | 0.198 |
-| cue:depth_boundary_emphasis [mismatched depth] | 0.652 | 0.607 | -4.505 | 0.065 | 0.104 | 474 | 1420 | 0.748 | 0.680 | 432 | 145 | 0.387 |
-| cue:entity_background_separation [mismatched depth] | 0.652 | 0.645 | -0.724 | 0.036 | 0.031 | 266 | 418 | 0.748 | 0.736 | 298 | 103 | 0.357 |
-| cue:shadow_reinforcement [mismatched depth] | 0.652 | 0.633 | -1.933 | 0.047 | 0.054 | 340 | 746 | 0.748 | 0.721 | 398 | 160 | 0.108 |
-| cue:contrast_luminance [mismatched depth] | 0.652 | 0.652 | -0.024 | 0.032 | 0.017 | 231 | 236 | 0.748 | 0.748 | 303 | 123 | 0.859 |
-| cue:thermal_injection [mismatched depth] | 0.652 | 0.610 | -4.195 | 0.069 | 0.101 | 506 | 1387 | 0.748 | 0.683 | 474 | 181 | 0.464 |
-| detector+cue:border_strengthening | 0.652 | 0.632 | -1.995 | 0.086 | 0.077 | 630 | 1049 | 0.748 | 0.732 | 847 | 340 | 70.949 |
-| detector+cue:depth_boundary_emphasis | 0.652 | 0.619 | -3.324 | 0.096 | 0.102 | 703 | 1401 | 0.748 | 0.713 | 893 | 340 | 71.132 |
-| detector+cue:entity_background_separation | 0.652 | 0.632 | -2.029 | 0.086 | 0.077 | 627 | 1053 | 0.748 | 0.731 | 851 | 328 | 71.105 |
-| detector+cue:shadow_reinforcement | 0.652 | 0.630 | -2.190 | 0.090 | 0.082 | 658 | 1118 | 0.748 | 0.728 | 874 | 330 | 70.859 |
-| detector+cue:contrast_luminance | 0.652 | 0.629 | -2.305 | 0.083 | 0.080 | 609 | 1093 | 0.748 | 0.729 | 847 | 353 | 71.591 |
-| detector+cue:thermal_injection | 0.652 | 0.616 | -3.600 | 0.098 | 0.107 | 713 | 1469 | 0.748 | 0.709 | 902 | 363 | 71.207 |
+| oracle_classical | 0.653 | 0.663 | 1.071 | 0.075 | 0.023 | 547 | 322 | 0.748 | 0.772 | 843 | 346 | 0.616 |
+| detector_classical | 0.653 | 0.663 | 1.029 | 0.050 | 0.011 | 363 | 147 | 0.748 | 0.770 | 598 | 266 | 100.932 |
+| baseline:unsharp | 0.653 | 0.650 | -0.271 | 0.035 | 0.023 | 257 | 314 | 0.748 | 0.746 | 331 | 126 | 0.553 |
+| baseline:autocontrast | 0.653 | 0.656 | 0.319 | 0.027 | 0.009 | 194 | 127 | 0.748 | 0.754 | 278 | 113 | 1.354 |
+| baseline:clahe | 0.653 | 0.652 | -0.057 | 0.023 | 0.013 | 168 | 180 | 0.748 | 0.748 | 223 | 91 | 1.430 |
+| cue:border_strengthening | 0.653 | 0.651 | -0.171 | 0.026 | 0.017 | 193 | 229 | 0.748 | 0.746 | 232 | 75 | 27.165 |
+| cue:depth_boundary_emphasis | 0.653 | 0.646 | -0.695 | 0.030 | 0.027 | 222 | 368 | 0.748 | 0.740 | 295 | 118 | 27.693 |
+| cue:entity_background_separation | 0.653 | 0.652 | -0.081 | 0.031 | 0.018 | 226 | 243 | 0.748 | 0.746 | 273 | 91 | 27.583 |
+| cue:shadow_reinforcement | 0.653 | 0.649 | -0.357 | 0.044 | 0.029 | 318 | 393 | 0.748 | 0.741 | 375 | 124 | 26.944 |
+| cue:contrast_luminance | 0.653 | 0.653 | 0.033 | 0.021 | 0.010 | 150 | 143 | 0.748 | 0.750 | 198 | 72 | 28.554 |
+| cue:thermal_injection | 0.653 | 0.624 | -2.814 | 0.070 | 0.080 | 509 | 1100 | 0.748 | 0.706 | 564 | 210 | 27.470 |
+| cue:border_strengthening [clean depth] | 0.653 | 0.652 | -0.052 | 0.030 | 0.017 | 219 | 230 | 0.748 | 0.746 | 250 | 68 | 0.576 |
+| cue:depth_boundary_emphasis [clean depth] | 0.653 | 0.649 | -0.376 | 0.038 | 0.026 | 279 | 358 | 0.748 | 0.743 | 351 | 116 | 1.122 |
+| cue:entity_background_separation [clean depth] | 0.653 | 0.653 | 0.067 | 0.037 | 0.019 | 273 | 259 | 0.748 | 0.747 | 315 | 91 | 1.005 |
+| cue:shadow_reinforcement [clean depth] | 0.653 | 0.651 | -0.176 | 0.053 | 0.031 | 388 | 425 | 0.748 | 0.744 | 457 | 136 | 0.374 |
+| cue:contrast_luminance [clean depth] | 0.653 | 0.653 | 0.038 | 0.021 | 0.011 | 156 | 148 | 0.748 | 0.749 | 199 | 71 | 1.981 |
+| cue:thermal_injection [clean depth] | 0.653 | 0.629 | -2.362 | 0.080 | 0.079 | 587 | 1083 | 0.748 | 0.710 | 621 | 188 | 0.891 |
+| cue:border_strengthening [mismatched depth] | 0.653 | 0.646 | -0.614 | 0.034 | 0.027 | 245 | 374 | 0.748 | 0.736 | 256 | 83 | 0.571 |
+| cue:depth_boundary_emphasis [mismatched depth] | 0.653 | 0.642 | -1.071 | 0.042 | 0.039 | 307 | 532 | 0.748 | 0.727 | 304 | 93 | 1.105 |
+| cue:entity_background_separation [mismatched depth] | 0.653 | 0.645 | -0.757 | 0.036 | 0.031 | 263 | 422 | 0.748 | 0.735 | 288 | 97 | 0.993 |
+| cue:shadow_reinforcement [mismatched depth] | 0.653 | 0.632 | -2.048 | 0.046 | 0.056 | 336 | 766 | 0.748 | 0.721 | 400 | 161 | 0.369 |
+| cue:contrast_luminance [mismatched depth] | 0.653 | 0.652 | -0.090 | 0.019 | 0.011 | 136 | 155 | 0.748 | 0.748 | 187 | 70 | 1.961 |
+| cue:thermal_injection [mismatched depth] | 0.653 | 0.610 | -4.238 | 0.068 | 0.101 | 499 | 1389 | 0.748 | 0.683 | 464 | 179 | 0.880 |
+| detector+cue:border_strengthening | 0.653 | 0.664 | 1.124 | 0.068 | 0.019 | 494 | 258 | 0.748 | 0.768 | 702 | 281 | 128.076 |
+| detector+cue:depth_boundary_emphasis | 0.653 | 0.658 | 0.505 | 0.066 | 0.027 | 480 | 374 | 0.748 | 0.762 | 710 | 292 | 128.602 |
+| detector+cue:entity_background_separation | 0.653 | 0.664 | 1.114 | 0.070 | 0.020 | 510 | 276 | 0.748 | 0.768 | 733 | 278 | 128.493 |
+| detector+cue:shadow_reinforcement | 0.653 | 0.661 | 0.876 | 0.076 | 0.027 | 558 | 374 | 0.748 | 0.763 | 775 | 290 | 127.876 |
+| detector+cue:contrast_luminance | 0.653 | 0.662 | 0.957 | 0.060 | 0.018 | 441 | 240 | 0.748 | 0.768 | 672 | 288 | 129.467 |
+| detector+cue:thermal_injection | 0.653 | 0.647 | -0.505 | 0.094 | 0.058 | 684 | 790 | 0.748 | 0.743 | 880 | 347 | 128.368 |
 
 On clean inputs:
 
 | label | delta_pp_vs_clean | changed_rate | correct_to_wrong | wrong_to_correct |
 |---|---|---|---|---|
-| detector_classical | 0.200 | 0.002 | 0 | 1 |
+| detector_classical | 0.000 | 0.000 | 0 | 0 |
 | baseline:unsharp | -0.600 | 0.020 | 5 | 2 |
-| baseline:autocontrast | -0.600 | 0.014 | 4 | 1 |
-| baseline:clahe | -0.200 | 0.020 | 4 | 3 |
-| cue:border_strengthening | 0.200 | 0.016 | 2 | 3 |
-| cue:depth_boundary_emphasis | -2.000 | 0.044 | 12 | 2 |
+| baseline:autocontrast | 0.000 | 0.010 | 2 | 2 |
+| baseline:clahe | 0.000 | 0.020 | 3 | 3 |
+| cue:border_strengthening | 0.200 | 0.014 | 2 | 3 |
+| cue:depth_boundary_emphasis | -0.800 | 0.020 | 5 | 1 |
 | cue:entity_background_separation | 0.000 | 0.018 | 2 | 2 |
 | cue:shadow_reinforcement | 0.000 | 0.026 | 3 | 3 |
-| cue:contrast_luminance | 0.000 | 0.020 | 3 | 3 |
-| cue:thermal_injection | -1.400 | 0.056 | 13 | 6 |
+| cue:contrast_luminance | -0.200 | 0.014 | 3 | 2 |
+| cue:thermal_injection | -1.600 | 0.056 | 14 | 6 |
 | cue:border_strengthening [clean depth] | 0.200 | 0.014 | 2 | 3 |
-| cue:depth_boundary_emphasis [clean depth] | -2.000 | 0.044 | 12 | 2 |
+| cue:depth_boundary_emphasis [clean depth] | -0.800 | 0.020 | 5 | 1 |
 | cue:entity_background_separation [clean depth] | 0.000 | 0.018 | 2 | 2 |
 | cue:shadow_reinforcement [clean depth] | 0.000 | 0.026 | 3 | 3 |
-| cue:contrast_luminance [clean depth] | 0.000 | 0.020 | 3 | 3 |
-| cue:thermal_injection [clean depth] | -1.800 | 0.056 | 14 | 5 |
+| cue:contrast_luminance [clean depth] | -0.200 | 0.014 | 3 | 2 |
+| cue:thermal_injection [clean depth] | -1.600 | 0.058 | 14 | 6 |
 | cue:border_strengthening [mismatched depth] | 0.400 | 0.016 | 1 | 3 |
-| cue:depth_boundary_emphasis [mismatched depth] | -0.600 | 0.066 | 13 | 10 |
+| cue:depth_boundary_emphasis [mismatched depth] | -0.200 | 0.040 | 6 | 5 |
 | cue:entity_background_separation [mismatched depth] | 0.400 | 0.022 | 2 | 4 |
 | cue:shadow_reinforcement [mismatched depth] | -1.200 | 0.046 | 10 | 4 |
-| cue:contrast_luminance [mismatched depth] | 0.000 | 0.020 | 3 | 3 |
+| cue:contrast_luminance [mismatched depth] | -0.200 | 0.010 | 2 | 1 |
 | cue:thermal_injection [mismatched depth] | 0.200 | 0.056 | 9 | 10 |
-| detector+cue:border_strengthening | 0.200 | 0.016 | 2 | 3 |
-| detector+cue:depth_boundary_emphasis | -2.000 | 0.044 | 12 | 2 |
+| detector+cue:border_strengthening | 0.200 | 0.014 | 2 | 3 |
+| detector+cue:depth_boundary_emphasis | -0.600 | 0.018 | 4 | 1 |
 | detector+cue:entity_background_separation | 0.000 | 0.018 | 2 | 2 |
 | detector+cue:shadow_reinforcement | 0.000 | 0.026 | 3 | 3 |
-| detector+cue:contrast_luminance | 0.000 | 0.020 | 3 | 3 |
-| detector+cue:thermal_injection | -1.400 | 0.058 | 13 | 6 |
+| detector+cue:contrast_luminance | 0.000 | 0.012 | 2 | 2 |
+| detector+cue:thermal_injection | -1.800 | 0.060 | 15 | 6 |
 
 ### Held-out stress test
 
@@ -164,16 +164,16 @@ Perturbations never seen by the detector or strength tuning (rand_augment). They
 
 | perturbation | label | acc_perturbed | acc_restored | delta_pp | fix_rate | break_rate |
 |---|---|---|---|---|---|---|
-| rand_augment | detector_classical | 0.731 | 0.725 | -0.667 | 0.025 | 0.018 |
-| rand_augment | baseline:unsharp | 0.731 | 0.727 | -0.467 | 0.040 | 0.021 |
-| rand_augment | baseline:autocontrast | 0.731 | 0.734 | 0.267 | 0.022 | 0.005 |
+| rand_augment | detector_classical | 0.731 | 0.727 | -0.400 | 0.002 | 0.006 |
+| rand_augment | baseline:unsharp | 0.731 | 0.726 | -0.533 | 0.040 | 0.022 |
+| rand_augment | baseline:autocontrast | 0.731 | 0.736 | 0.467 | 0.025 | 0.003 |
 | rand_augment | baseline:clahe | 0.731 | 0.735 | 0.400 | 0.022 | 0.003 |
-| rand_augment | cue:border_strengthening | 0.731 | 0.731 | -0.067 | 0.015 | 0.006 |
-| rand_augment | cue:depth_boundary_emphasis | 0.731 | 0.715 | -1.667 | 0.045 | 0.039 |
-| rand_augment | cue:entity_background_separation | 0.731 | 0.733 | 0.133 | 0.027 | 0.008 |
-| rand_augment | cue:shadow_reinforcement | 0.731 | 0.733 | 0.133 | 0.042 | 0.014 |
-| rand_augment | cue:contrast_luminance | 0.731 | 0.737 | 0.533 | 0.025 | 0.002 |
-| rand_augment | cue:thermal_injection | 0.731 | 0.720 | -1.133 | 0.060 | 0.037 |
+| rand_augment | cue:border_strengthening | 0.731 | 0.731 | -0.067 | 0.012 | 0.005 |
+| rand_augment | cue:depth_boundary_emphasis | 0.731 | 0.730 | -0.133 | 0.022 | 0.010 |
+| rand_augment | cue:entity_background_separation | 0.731 | 0.733 | 0.200 | 0.030 | 0.008 |
+| rand_augment | cue:shadow_reinforcement | 0.731 | 0.734 | 0.267 | 0.042 | 0.012 |
+| rand_augment | cue:contrast_luminance | 0.731 | 0.733 | 0.200 | 0.017 | 0.004 |
+| rand_augment | cue:thermal_injection | 0.731 | 0.720 | -1.133 | 0.062 | 0.038 |
 
 Fixes and breaks by perturbation and severity (per-condition counts are in `restoration/summary.csv`):
 
@@ -189,24 +189,24 @@ Each cue with depth re-estimated on the perturbed input (deployable), the clean 
 
 | method | perturbed | clean | mismatched |
 |---|---|---|---|
-| cue:border_strengthening | -0.129 | -0.024 | -0.557 |
-| cue:contrast_luminance | -0.067 | -0.029 | -0.024 |
-| cue:depth_boundary_emphasis | -2.614 | -1.805 | -4.505 |
-| cue:entity_background_separation | 0.014 | 0.062 | -0.724 |
-| cue:shadow_reinforcement | -0.290 | -0.105 | -1.933 |
-| cue:thermal_injection | -2.805 | -2.395 | -4.195 |
+| cue:border_strengthening | -0.171 | -0.052 | -0.614 |
+| cue:contrast_luminance | 0.033 | 0.038 | -0.090 |
+| cue:depth_boundary_emphasis | -0.695 | -0.376 | -1.071 |
+| cue:entity_background_separation | -0.081 | 0.067 | -0.757 |
+| cue:shadow_reinforcement | -0.357 | -0.176 | -2.048 |
+| cue:thermal_injection | -2.814 | -2.362 | -4.238 |
 
 ### Components: detector restoration alone vs. followed by each cue
 
 | label | acc_restored | delta_pp | fix_rate | break_rate |
 |---|---|---|---|---|
-| detector_classical | 0.628 | -2.390 | 0.071 | 0.074 |
-| detector+cue:border_strengthening | 0.632 | -1.995 | 0.086 | 0.077 |
-| detector+cue:depth_boundary_emphasis | 0.619 | -3.324 | 0.096 | 0.102 |
-| detector+cue:entity_background_separation | 0.632 | -2.029 | 0.086 | 0.077 |
-| detector+cue:shadow_reinforcement | 0.630 | -2.190 | 0.090 | 0.082 |
-| detector+cue:contrast_luminance | 0.629 | -2.305 | 0.083 | 0.080 |
-| detector+cue:thermal_injection | 0.616 | -3.600 | 0.098 | 0.107 |
+| detector_classical | 0.663 | 1.029 | 0.050 | 0.011 |
+| detector+cue:border_strengthening | 0.664 | 1.124 | 0.068 | 0.019 |
+| detector+cue:depth_boundary_emphasis | 0.658 | 0.505 | 0.066 | 0.027 |
+| detector+cue:entity_background_separation | 0.664 | 1.114 | 0.070 | 0.020 |
+| detector+cue:shadow_reinforcement | 0.661 | 0.876 | 0.076 | 0.027 |
+| detector+cue:contrast_luminance | 0.662 | 0.957 | 0.060 | 0.018 |
+| detector+cue:thermal_injection | 0.647 | -0.505 | 0.094 | 0.058 |
 
 ### Do failures coincide with unreliable depth?
 
@@ -214,37 +214,37 @@ Depth reliability is the Spearman correlation between depth estimated on the per
 
 | depth_bin | acc_perturbed | n |
 |---|---|---|
-| (-0.913, 0.928] | 0.581 | 5250 |
+| (-0.911, 0.928] | 0.581 | 5250 |
 | (0.928, 0.978] | 0.628 | 5250 |
-| (0.978, 0.995] | 0.671 | 5250 |
-| (0.995, 1.0] | 0.730 | 5250 |
+| (0.978, 0.995] | 0.672 | 5250 |
+| (0.995, 1.0] | 0.729 | 5250 |
 
 | method | depth_rank_corr | n | fix_rate | break_rate | delta_pp |
 |---|---|---|---|---|---|
-| cue:border_strengthening | (-0.913, 0.928] | 5250 | 0.022 | 0.018 | -0.133 |
-| cue:border_strengthening | (0.928, 0.978] | 5250 | 0.028 | 0.017 | -0.038 |
-| cue:border_strengthening | (0.978, 0.995] | 5250 | 0.028 | 0.016 | -0.190 |
-| cue:border_strengthening | (0.995, 1.0] | 5250 | 0.026 | 0.012 | -0.152 |
-| cue:contrast_luminance | (-0.913, 0.928] | 5250 | 0.024 | 0.020 | -0.171 |
-| cue:contrast_luminance | (0.928, 0.978] | 5250 | 0.025 | 0.015 | -0.038 |
-| cue:contrast_luminance | (0.978, 0.995] | 5250 | 0.032 | 0.021 | -0.362 |
-| cue:contrast_luminance | (0.995, 1.0] | 5250 | 0.046 | 0.013 | 0.305 |
-| cue:depth_boundary_emphasis | (-0.913, 0.928] | 5250 | 0.042 | 0.091 | -3.543 |
-| cue:depth_boundary_emphasis | (0.928, 0.978] | 5250 | 0.057 | 0.066 | -2.038 |
-| cue:depth_boundary_emphasis | (0.978, 0.995] | 5250 | 0.061 | 0.064 | -2.248 |
-| cue:depth_boundary_emphasis | (0.995, 1.0] | 5250 | 0.068 | 0.061 | -2.629 |
-| cue:entity_background_separation | (-0.913, 0.928] | 5250 | 0.030 | 0.023 | -0.057 |
-| cue:entity_background_separation | (0.928, 0.978] | 5250 | 0.031 | 0.018 | 0.038 |
-| cue:entity_background_separation | (0.978, 0.995] | 5250 | 0.034 | 0.017 | -0.019 |
-| cue:entity_background_separation | (0.995, 1.0] | 5250 | 0.038 | 0.013 | 0.095 |
-| cue:shadow_reinforcement | (-0.913, 0.928] | 5250 | 0.038 | 0.036 | -0.495 |
-| cue:shadow_reinforcement | (0.928, 0.978] | 5250 | 0.040 | 0.031 | -0.457 |
-| cue:shadow_reinforcement | (0.978, 0.995] | 5250 | 0.045 | 0.033 | -0.781 |
-| cue:shadow_reinforcement | (0.995, 1.0] | 5250 | 0.065 | 0.016 | 0.571 |
-| cue:thermal_injection | (-0.913, 0.928] | 5250 | 0.063 | 0.071 | -1.486 |
-| cue:thermal_injection | (0.928, 0.978] | 5250 | 0.067 | 0.078 | -2.419 |
-| cue:thermal_injection | (0.978, 0.995] | 5250 | 0.072 | 0.087 | -3.505 |
-| cue:thermal_injection | (0.995, 1.0] | 5250 | 0.085 | 0.084 | -3.810 |
+| cue:border_strengthening | (-0.911, 0.928] | 5250 | 0.023 | 0.019 | -0.133 |
+| cue:border_strengthening | (0.928, 0.978] | 5250 | 0.027 | 0.020 | -0.267 |
+| cue:border_strengthening | (0.978, 0.995] | 5250 | 0.030 | 0.015 | -0.057 |
+| cue:border_strengthening | (0.995, 1.0] | 5250 | 0.027 | 0.013 | -0.229 |
+| cue:contrast_luminance | (-0.911, 0.928] | 5250 | 0.015 | 0.012 | -0.076 |
+| cue:contrast_luminance | (0.928, 0.978] | 5250 | 0.018 | 0.010 | 0.019 |
+| cue:contrast_luminance | (0.978, 0.995] | 5250 | 0.019 | 0.012 | -0.190 |
+| cue:contrast_luminance | (0.995, 1.0] | 5250 | 0.035 | 0.008 | 0.381 |
+| cue:depth_boundary_emphasis | (-0.911, 0.928] | 5250 | 0.027 | 0.030 | -0.629 |
+| cue:depth_boundary_emphasis | (0.928, 0.978] | 5250 | 0.033 | 0.029 | -0.590 |
+| cue:depth_boundary_emphasis | (0.978, 0.995] | 5250 | 0.027 | 0.024 | -0.705 |
+| cue:depth_boundary_emphasis | (0.995, 1.0] | 5250 | 0.037 | 0.025 | -0.857 |
+| cue:entity_background_separation | (-0.911, 0.928] | 5250 | 0.028 | 0.022 | -0.095 |
+| cue:entity_background_separation | (0.928, 0.978] | 5250 | 0.027 | 0.021 | -0.286 |
+| cue:entity_background_separation | (0.978, 0.995] | 5250 | 0.031 | 0.016 | -0.076 |
+| cue:entity_background_separation | (0.995, 1.0] | 5250 | 0.040 | 0.013 | 0.133 |
+| cue:shadow_reinforcement | (-0.911, 0.928] | 5250 | 0.037 | 0.035 | -0.495 |
+| cue:shadow_reinforcement | (0.928, 0.978] | 5250 | 0.037 | 0.033 | -0.705 |
+| cue:shadow_reinforcement | (0.978, 0.995] | 5250 | 0.044 | 0.033 | -0.781 |
+| cue:shadow_reinforcement | (0.995, 1.0] | 5250 | 0.062 | 0.015 | 0.552 |
+| cue:thermal_injection | (-0.911, 0.928] | 5250 | 0.061 | 0.068 | -1.410 |
+| cue:thermal_injection | (0.928, 0.978] | 5250 | 0.065 | 0.079 | -2.571 |
+| cue:thermal_injection | (0.978, 0.995] | 5250 | 0.071 | 0.087 | -3.505 |
+| cue:thermal_injection | (0.995, 1.0] | 5250 | 0.087 | 0.084 | -3.771 |
 
 ## Cue strength sweep (clean images)
 

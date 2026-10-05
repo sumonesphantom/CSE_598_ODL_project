@@ -7,9 +7,9 @@ cd "$(dirname "$0")/.."
 
 MODE="${1:-quick}"
 if [[ "$MODE" == "quick" ]]; then
-  DIAG="--per-class 5"; TRAIN="--train-per-class 10 --val-per-class 5"; TUNE="--per-class 2"; REST="--per-class 5"; SWEEP="--per-class 5"
+  DIAG="--per-class 5"; TRAIN="--train-per-class 10 --val-per-class 5"; TUNE="--per-class 2"; PLANS="--per-class 5"; REST="--per-class 5"; SWEEP="--per-class 5"
 elif [[ "$MODE" == "full" ]]; then
-  DIAG=""; TRAIN="--train-per-class 40 --val-per-class 20"; TUNE="--per-class 10"; REST="--per-class 50"; SWEEP="--per-class 50"
+  DIAG=""; TRAIN="--train-per-class 40 --val-per-class 20"; TUNE="--per-class 10"; PLANS="--per-class 20"; REST="--per-class 50"; SWEEP="--per-class 50"
 else
   echo "usage: $0 [quick|full]"; exit 1
 fi
@@ -18,6 +18,7 @@ python scripts/prepare_data.py
 python scripts/run_diagnostic.py $DIAG
 python scripts/train_detector.py $TRAIN
 python scripts/tune_strengths.py $TUNE      # dev (train) split; writes results/tuning/strengths.json
+python scripts/tune_plans.py $PLANS         # dev (train) split; writes results/tuning/plans.json
 python scripts/run_restoration.py $REST
 python scripts/run_cue_sweep.py $SWEEP
 python scripts/analyze.py
