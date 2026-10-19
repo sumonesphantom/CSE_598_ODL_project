@@ -36,11 +36,13 @@ def main() -> None:
     parser.add_argument("--cues", nargs="*", default=list(CUES), choices=list(CUES))
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--device", default=None)
+    parser.add_argument("--backbone", default="resnet50",
+                        help="key in config.BACKBONES or a Hugging Face ImageNet-1k model id")
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--out", type=Path, default=RESULTS_DIR / "cue_sweep")
     args = parser.parse_args()
 
-    classifier = FrozenClassifier(device=args.device)
+    classifier = FrozenClassifier(args.backbone, device=args.device)
     depth_cache = DepthCache()
     clean = BatchPredictor(classifier, args.batch_size)
     cued = BatchPredictor(classifier, args.batch_size)

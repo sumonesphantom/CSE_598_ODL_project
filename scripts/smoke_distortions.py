@@ -57,6 +57,8 @@ def main() -> None:
     parser.add_argument("--sheets", type=int, default=3, help="number of images to render contact sheets for")
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--device", default=None)
+    parser.add_argument("--backbone", default="resnet50",
+                        help="key in config.BACKBONES or a Hugging Face ImageNet-1k model id")
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--out", type=Path, default=RESULTS_DIR / "distortions")
     args = parser.parse_args()
@@ -66,7 +68,7 @@ def main() -> None:
     records = list_images("val", per_class=args.per_class, seed=args.seed)
     # Spread the sample sheets across classes (records are grouped by class).
     sheet_ids = {r.image_id for r in records[:: max(1, len(records) // max(1, args.sheets))][: args.sheets]}
-    predictor = BatchPredictor(FrozenClassifier(device=args.device), args.batch_size)
+    predictor = BatchPredictor(FrozenClassifier(args.backbone, device=args.device), args.batch_size)
     depth_cache = DepthCache() if "pipeline" in args.sets else None
 
     for record in tqdm(records, desc="images"):

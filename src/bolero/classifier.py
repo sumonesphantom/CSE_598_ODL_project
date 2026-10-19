@@ -1,4 +1,8 @@
-"""The system under test: a frozen ImageNet-pretrained ResNet-50."""
+"""The system under test: a frozen ImageNet-1k classifier (ResNet-50 by default).
+
+Backbones are swappable via `BACKBONES` or any Hugging Face image-classification
+id with the standard ImageNet-1k label space, so IMAGENETTE_INDEX stays valid.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +13,7 @@ import numpy as np
 import torch
 from transformers import AutoImageProcessor, AutoModelForImageClassification
 
-from .config import CLASSIFIER_MODEL, get_device
+from .config import BACKBONES, CLASSIFIER_MODEL, get_device
 from .data import to_pil
 
 
@@ -19,12 +23,22 @@ class Predictions:
     confidence: np.ndarray   # top-1 softmax probability
     true_prob: np.ndarray    # softmax probability of the true class
     seconds: float           # wall time for the batch
+    topk_index: np.ndarray   # (N, k) candidate classes, most probable first
+    topk_prob: np.ndarray    # (N, k) their softmax probabilities
+
+
+def resolve_backbone(name: str) -> str:
+    """A `BACKBONES` key or a Hugging Face model id -> model id."""
+    return BACKBONES.get(name, name)
 
 
 class FrozenClassifier:
-    """ResNet-50 with frozen weights. Never trained or fine-tuned in this project."""
+    """ImageNet-1k classifier with frozen weights. Never trained or fine-tuned in this project."""
 
-    def __init__(self, model_name: str = CLASSIFIER_MODEL, device: str | None = None):
+    def __init__(self, model_name: str = CLASSIFIER_MODEL, device: str | None = None, top_k: int = 5):
+        model_name = resolve_backbone(model_name)
+        self.model_name = model_name
+        self.top_k = top_k
         self.device = get_device(device)
         self.processor = AutoImageProcessor.from_pretrained(model_name, use_fast=False)
         self.model = AutoModelForImageClassification.from_pretrained(model_name).to(self.device).eval()
@@ -39,6 +53,7 @@ class FrozenClassifier:
         logits = self.model(pixel_values=inputs["pixel_values"].to(self.device)).logits
         probs = torch.softmax(logits.float(), dim=-1)
         conf, index = probs.max(dim=-1)
+        topk_prob, topk_index = probs.topk(self.top_k, dim=-1)
         true_prob = probs.gather(1, torch.as_tensor(true_index, device=probs.device).view(-1, 1))
         if self.device.type == "mps":
             torch.mps.synchronize()
@@ -47,7 +62,13 @@ class FrozenClassifier:
             confidence=conf.cpu().numpy(),
             true_prob=true_prob.squeeze(1).cpu().numpy(),
             seconds=time.perf_counter() - start,
+            topk_index=topk_index.cpu().numpy(),
+            topk_prob=topk_prob.cpu().numpy(),
         )
+
+    def candidates(self, preds: Predictions, i: int) -> list[tuple[str, float]]:
+        """Probability-weighted class candidates for image i, e.g. [("golf ball", 0.707), ...]."""
+        return [(self.id2label[int(c)], float(p)) for c, p in zip(preds.topk_index[i], preds.topk_prob[i])]
 
 
 class BatchPredictor:

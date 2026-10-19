@@ -76,6 +76,8 @@ def main() -> None:
     parser.add_argument("--detector", type=Path, default=RESULTS_DIR / "detector" / "detector.joblib")
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--device", default=None)
+    parser.add_argument("--backbone", default="resnet50",
+                        help="key in config.BACKBONES or a Hugging Face ImageNet-1k model id")
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--out", type=Path, default=RESULTS_DIR / "restoration")
     args = parser.parse_args()
@@ -86,7 +88,7 @@ def main() -> None:
         raise SystemExit("--combo-cues needs the 'perturbed' depth source.")
     strengths, strength_status = load_strengths(args.strengths)
     detector = PerturbationDetector.load(args.detector)
-    classifier = FrozenClassifier(device=args.device)
+    classifier = FrozenClassifier(args.backbone, device=args.device)
     estimator = DepthEstimator(device=args.device)
     depth_cache = DepthCache(estimator)
     predictor = BatchPredictor(classifier, args.batch_size)

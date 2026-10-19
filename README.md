@@ -410,10 +410,13 @@ CSE_598_ODL_project/
 ├── src/bolero/
 │   ├── config.py          paths, wnid → ImageNet index mapping, device selection
 │   ├── data.py            Imagenette listing and loading
-│   ├── classifier.py      frozen ResNet-50 and batched prediction
+│   ├── classifier.py      frozen ImageNet-1k classifier (swappable backbone, top-k candidates), batched prediction
 │   ├── depth.py           Depth-Anything-V2 estimator, on-disk cache, boundary / near / far masks
 │   ├── perturbations.py   the 14 perturbations
 │   ├── cues.py            the 6 depth-derived contextual cues
+│   ├── segmentation.py    SAM / DETR entity regions → structure maps that cues accept in place of depth
+│   ├── benchmark.py       ImageNet-C style CE / relative CE / mCE
+│   ├── prompting.py       structured evidence → in-context prompt for a VLM
 │   ├── baselines.py       depth-free baselines (unsharp, auto-contrast, CLAHE)
 │   ├── tuning.py          strength selection on dev data
 │   ├── restoration.py     classical restoration plans
