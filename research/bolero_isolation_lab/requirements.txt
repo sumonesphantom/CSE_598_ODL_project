@@ -1,0 +1,14 @@
+# Target interpreter: CPython 3.11.9
+# For CUDA-specific installations, use the official PyTorch selector first, then install the remaining packages.
+torch>=2.7,<3.0
+torchvision>=0.22,<1.0
+transformers>=4.49,<5.0
+huggingface-hub>=0.28,<1.0
+safetensors>=0.4.5
+numpy>=1.26,<2.0
+pandas>=2.2,<3.0
+matplotlib>=3.8,<4.0
+Pillow>=10.4,<13.0
+opencv-python-headless>=4.10,<5.0
+tqdm>=4.67,<5.0
+ipykernel>=6.29,<7.0
