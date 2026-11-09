@@ -781,7 +781,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--conditions",
         nargs="*",
         default=["region_removal", "foreground_occlusion", "boundary_erase", "background_removal"],
-        choices=list(ALL_PERTURBATIONS),
     )
     parser.add_argument("--levels", nargs="*", type=int, default=[2])
     parser.add_argument(
@@ -808,10 +807,33 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--classifier", default="resnet50")
 
     args = parser.parse_args(argv)
+    args.configs = [
+        piece.strip()
+        for value in args.configs
+        for piece in str(value).split(",")
+        if piece.strip()
+    ]
+    args.conditions = [
+        piece.strip()
+        for value in args.conditions
+        for piece in str(value).split(",")
+        if piece.strip()
+    ]
+    args.sample = [
+        piece.strip()
+        for value in args.sample
+        for piece in str(value).split(",")
+        if piece.strip()
+    ]
     try:
         validate_configs(args.configs)
     except ValueError as exc:
         parser.error(str(exc))
+    bad_conditions = [name for name in args.conditions if name not in ALL_PERTURBATIONS]
+    if bad_conditions:
+        parser.error(
+            f"unknown condition(s) {bad_conditions}; choose from {list(ALL_PERTURBATIONS)}"
+        )
     bad_levels = [level for level in args.levels if level not in (1, 2, 3)]
     if bad_levels:
         parser.error(f"levels must be 1, 2, or 3; got {bad_levels}")
