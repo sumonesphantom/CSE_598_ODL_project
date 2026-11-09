@@ -562,6 +562,11 @@ def _execute(
             reserved += calls_per_sample
             n_samples += 1
             inflight[pool.submit(process, sample)] = sample
+            if n_samples % 100 == 0:
+                print(
+                    f"JCODE_PROGRESS {json.dumps({'current': n_samples, 'message': f'{len(rows)} rows'})}",
+                    flush=True,
+                )
             return True
 
         for _ in range(workers):
