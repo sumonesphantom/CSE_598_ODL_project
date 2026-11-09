@@ -208,3 +208,17 @@ def test_vlm_client_multi_image_prompt(tmp_path):
     assert response.text == "ok"
     assert seen["n_images"] == 2
     assert seen["prompt"] == "two views"
+
+
+def test_vlm_cache_key_includes_prompt(tmp_path):
+    calls = []
+
+    def fake_generate(images, prompt):
+        calls.append(prompt)
+        return "ok"
+
+    client = VLMClient(generate_fn=fake_generate, cache_dir=tmp_path)
+    image = [np.zeros((4, 4, 3), dtype=np.float32)]
+    client.ask(image, "prompt a", "case")
+    client.ask(image, "prompt b", "case")
+    assert calls == ["prompt a", "prompt b"]

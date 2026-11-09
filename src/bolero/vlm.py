@@ -77,8 +77,9 @@ class VLMClient:
         self._model_device = device
         return processor, model, device
 
-    def _cache_path(self, cache_key: str) -> Path:
-        digest = hashlib.sha256(f"{self.model}{cache_key}".encode("utf-8")).hexdigest()
+    def _cache_path(self, cache_key: str, prompt: str = "") -> Path:
+        payload = f"{self.model}|{self.max_new_tokens}|{cache_key}|{prompt}"
+        digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
         return self.cache_dir / f"{digest}.json"
 
     def _write_cache(self, path: Path, text: str, raw: dict | None) -> None:
@@ -127,7 +128,7 @@ class VLMClient:
         use_cache: bool = True,
     ) -> VLMResponse:
         start = time.perf_counter()
-        path = self._cache_path(cache_key)
+        path = self._cache_path(cache_key, prompt)
 
         if use_cache and path.is_file():
             try:
