@@ -56,11 +56,12 @@ class SceneEvidence:
         """JSON-safe evidence for a decision model, free of ground-truth labels."""
         state: dict = {
             "image": {"width": int(self.image_size[0]), "height": int(self.image_size[1])},
-            "classifier_candidates": [
+        }
+        if self.candidates:
+            state["classifier_candidates"] = [
                 {"label": label, "prob": round(float(prob), 4)}
                 for label, prob in self.candidates
-            ],
-        }
+            ]
         if include_detector and self.perturbation is not None:
             probability = 0.0 if self.perturbation_prob is None else float(self.perturbation_prob)
             state["detector"] = {"label": self.perturbation, "probability": round(probability, 4)}

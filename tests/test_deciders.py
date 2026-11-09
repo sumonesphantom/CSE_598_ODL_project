@@ -170,6 +170,12 @@ def test_jev_payload_with_and_without_image(image, depth):
     assert with_image["state"][1]["image_url"]["url"].startswith("data:image/jpeg;base64,")
 
 
+def test_to_state_omits_empty_candidates():
+    state = SceneEvidence((10, 10), []).to_state()
+    assert "classifier_candidates" not in state
+    assert state == {"image": {"width": 10, "height": 10}}
+
+
 @pytest.mark.parametrize(
     ("taxonomy", "expected_condition"),
     [("family", "blur"), ("weather", "other")],
@@ -203,3 +209,15 @@ def test_conditions_iter_samples(tmp_path, taxonomy, expected_condition):
 
     buckets = Counter((s.condition, s.severity) for s in samples)
     assert all(count <= 1 for count in buckets.values())
+
+
+def test_conditions_iter_samples_empty_list(tmp_path):
+    rng = np.random.default_rng(0)
+    array = np.round(rng.random((64, 64, 3)) * 255).astype(np.uint8)
+    path = tmp_path / "sample.jpg"
+    Image.fromarray(array).save(path, format="JPEG", quality=95)
+    record = ImageRecord(image_id="sample", path=path, wnid="n01440764")
+
+    samples = list(iter_samples([record], taxonomy="family", perturbations=[], levels=[1]))
+    assert [s.condition for s in samples] == ["clean"]
+    assert samples[0].clean
