@@ -325,3 +325,24 @@ def test_blank_manual_values_are_skipped(tmp_path):
     assert result["fields"]["damage"]["n"] == 0
     assert result["fields"]["damage"]["agreement"] is None
     assert result["fields"]["relation"]["n"] == 0
+
+
+def test_review_reconstruction_uses_the_requested_seed(tmp_path):
+    module = load_script()
+    data_root, _, depth = make_scene(tmp_path)
+    row = prediction_row()
+
+    outputs = []
+    for seed in (1, 2):
+        out = tmp_path / f"seed-{seed}"
+        module.build_review(
+            [row],
+            out=out,
+            data_root=data_root,
+            depth_root=tmp_path / "depth",
+            depth_for=lambda record, image: depth,
+            seed=seed,
+        )
+        outputs.append((out / "img-0_text_degraded.jpg").read_bytes())
+
+    assert outputs[0] != outputs[1]

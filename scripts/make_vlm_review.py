@@ -298,6 +298,7 @@ def build_case(
     clean: np.ndarray,
     depth: np.ndarray,
     out: Path,
+    seed: int = SEED,
 ) -> dict:
     """Reconstruct one case, write its three thumbnails, and return the review row."""
     perturbation_name = str(row["perturbation"])
@@ -309,7 +310,7 @@ def build_case(
         clean,
         level,
         depth if perturbation.needs_depth else None,
-        rng_for(record.image_id, perturbation_name, level, SEED),
+        rng_for(record.image_id, perturbation_name, level, seed),
     )
 
     entity = region_evidence(near_mask(depth, 0.4), depth)
@@ -360,6 +361,7 @@ def build_review(
     data_root: Path = DATA_DIR / "imagenette2-320",
     depth_root: Path = CACHE_DIR / "depth-320",
     depth_for=None,
+    seed: int = SEED,
 ) -> dict:
     """Build review.csv, contact_sheet.html, and the thumbnails for `rows`."""
     out = Path(out)
@@ -381,7 +383,7 @@ def build_review(
             if depth_for is not None
             else cache.get(record, clean)
         )
-        review_rows.append(build_case(row, record, clean, depth, out))
+        review_rows.append(build_case(row, record, clean, depth, out, seed=seed))
 
     frame = pd.DataFrame(review_rows, columns=REVIEW_FIELDS)
     frame.to_csv(out / "review.csv", index=False)
@@ -670,6 +672,7 @@ def main(argv: Sequence[str] | None = None) -> dict:
         out=args.out,
         data_root=args.data_root,
         depth_root=args.depth_root,
+        seed=args.seed,
     )
     print(
         f"images={result['n_images']} rows={result['n_rows']} out={result['out']}",
