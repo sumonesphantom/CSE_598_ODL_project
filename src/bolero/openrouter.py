@@ -320,9 +320,18 @@ class DecisionsClient:
         # Headers are deliberately absent: the key must never reach disk.
         payload = json.dumps({"model": model, "response": raw})
         with self._lock:
+            tmp: Path | None = None
             try:
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(payload)
+                # Write then atomically replace, so a concurrent reader never sees
+                # a half-written cache file.
+                tmp = path.with_name(f".{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+                tmp.write_text(payload)
+                os.replace(tmp, path)
             except OSError:
                 # A cache failure must never fail an otherwise good decision.
-                pass
+                if tmp is not None:
+                    try:
+                        tmp.unlink(missing_ok=True)
+                    except OSError:
+                        pass

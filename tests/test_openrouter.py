@@ -118,6 +118,20 @@ def test_cache_hit_skips_network(tmp_path):
     assert second.answers == first.answers
     assert second.latency_ms >= 0.0
 
+    cache_file = next((tmp_path / "cache").glob("*.json"))
+    assert KEY not in cache_file.read_text()
+
+
+def test_corrupt_cache_is_a_miss(tmp_path):
+    c, session, _ = client(tmp_path, [success(), success()])
+    c.ask(MODEL, STATE, QUESTIONS)
+    cache_file = next((tmp_path / "cache").glob("*.json"))
+    cache_file.write_text("not json")
+
+    second = c.ask(MODEL, STATE, QUESTIONS)
+    assert len(session.calls) == 2
+    assert second.cached is False
+
 
 def test_cache_key_ignores_dict_order(tmp_path):
     c, session, _ = client(tmp_path, [success()])
