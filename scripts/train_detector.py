@@ -53,9 +53,11 @@ def main() -> None:
     parser.add_argument("--threshold", type=float, default=0.6)
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--out", type=Path, default=RESULTS_DIR / "detector")
+    parser.add_argument("--depth-root", type=Path, default=None,
+                        help="depth cache root (default: data/cache/depth; use a versioned root for 320 px)")
     args = parser.parse_args()
 
-    depth_cache = DepthCache()
+    depth_cache = DepthCache(root=args.depth_root) if args.depth_root else DepthCache()
     x_train, y_train, _ = build("train", args.train_per_class, args.seed, depth_cache)
     detector = PerturbationDetector(threshold=args.threshold).fit(x_train, y_train)
     detector.save(args.out / "detector.joblib")
