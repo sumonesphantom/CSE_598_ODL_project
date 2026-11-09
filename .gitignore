@@ -29,5 +29,11 @@ __pycache__/
 .venv/
 .ipynb_checkpoints/
 
+
+# Logs files
+*.log
+
+# Results folder
+results/*
 # Presentation decks (kept locally, not in the repo)
 progress presentation/
