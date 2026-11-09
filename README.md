@@ -655,15 +655,52 @@ python scripts/run_vlm_eval.py \
 
 Results are in `results/vlm/main/summary.csv` and `per_condition.csv`.
 
+| Config | n | Parse | Entity hit | Damage hit (n) | Relation hit (n) | Utility | Degraded acc | p50 ms |
+|---|---|---|---|---|---|---|---|---|
+| `none` | 50 | 1.00 | 0.400 | 0.150 (40) | 0.725 (40) | 0.400 | 0.840 | 6,267 |
+| `text` | 50 | 1.00 | 0.760 | 0.350 (40) | 0.825 (40) | 0.700 | 0.840 | 8,726 |
+| `overlay` | 40 | 1.00 | 0.325 | 0.125 (40) | 0.900 (40) | 0.325 | 0.825 | 6,053 |
+| `overlay+text` | 40 | 1.00 | **0.775** | 0.300 (40) | 0.800 (40) | **0.750** | 0.825 | 8,265 |
+
+(`none` and `text` also run on the 10 clean controls, hence n=50; the overlay
+configs are degraded-only, n=40. The relation hybrid coverage is 1.00: both
+boxes are always known, so the geometric check answers every relation.)
+
+What the table says:
+
+- **Text evidence is the main win.** Entity identification goes from 0.400 to
+  0.760, damage-content from 0.150 to 0.350, and label utility from 0.400 to
+  0.700. It costs about 2.4 s per call.
+- **The overlay alone does not help identity.** It drops entity hit to 0.325,
+  because the model attends to the drawn boxes rather than the object. It does
+  give the best relation score (0.900): the boxes make the spatial question
+  easy and distract from the harder identity question.
+- **Overlay plus text is the best config** on entity (0.775) and utility (0.750),
+  roughly tied with text, and more robust on relation than text alone. It is the
+  configuration to keep if latency is not the constraint.
+- **The VLM is not a better classifier.** Its utility (0.70 to 0.75) is below the
+  degraded classifier's 0.84. It is useful for describing what is missing, not
+  for replacing the recognizer.
+- **Naming the hidden content is the hard part.** Damage hit stays at 0.30 to
+  0.35 even with evidence, while the spatial relation is mostly correct. The
+  bottleneck is identity, not geometry.
+
+The grid is 10 images x 4 occlusion conditions x level 2 x 4 configs, plus 10
+clean controls, 180 rows. Generation took 929 s across 121 uncached calls; the
+cache hit rate was 33 % because an earlier interrupted run had already answered
+some cases. All 180 answers parsed as JSON.
+
 ### Manual review: 30 cases
 
-The automatic labels are a proxy, so the packet asks a human to check 30 images.
-Build it after the VLM run:
+The automatic labels are a proxy, so the packet asks a human to check 30 model
+outputs. The current packet is 10 images x 3 configs (`none`, `text`,
+`overlay+text`), which keeps every image while giving 30 judgments. Rebuild it
+with more images when the grid grows.
 
 ```bash
 python scripts/make_vlm_review.py \
   --predictions results/vlm/main/predictions.csv.gz \
-  --cases 30 --configs none,text \
+  --cases 30 --configs none,text,overlay+text \
   --out results/vlm/review
 ```
 
