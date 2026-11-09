@@ -28,3 +28,10 @@ __pycache__/
 .pytest_cache/
 .venv/
 .ipynb_checkpoints/
+
+
+# Logs files
+*.log
+
+# Results folder
+results/*
