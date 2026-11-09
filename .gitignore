@@ -35,3 +35,5 @@ __pycache__/
 
 # Results folder
 results/*
+# Presentation decks (kept locally, not in the repo)
+progress presentation/

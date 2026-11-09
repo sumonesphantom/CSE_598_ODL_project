@@ -15,6 +15,17 @@ CACHE_DIR = DATA_DIR / "cache"
 RESULTS_DIR = REPO_ROOT / "results"
 
 CLASSIFIER_MODEL = "microsoft/resnet-50"
+# Frozen ImageNet-1k recognizers that share one label space (see classifier.resolve_backbone).
+BACKBONES = {
+    "resnet50": "microsoft/resnet-50",
+    "vit_b16": "google/vit-base-patch16-224",
+    "convnext_t": "facebook/convnext-tiny-224",
+}
+# Spatial-evidence models (see segmentation.py).
+SEGMENTERS = {
+    "sam": "facebook/sam-vit-base",
+    "detr": "facebook/detr-resnet-50",
+}
 DEPTH_MODEL = "depth-anything/Depth-Anything-V2-Small-hf"
 
 IMAGENETTE_URL = "https://s3.amazonaws.com/fast-ai-imageclas/imagenette2-160.tgz"
