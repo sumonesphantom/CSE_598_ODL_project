@@ -115,6 +115,7 @@ class DecisionsClient:
         backoff: float = 0.5,
         session: Any | None = None,
         sleep: Callable[[float], None] = time.sleep,
+        guard: CostGuard | None = None,
     ) -> None:
         key = api_key if api_key is not None else os.environ.get("OPENROUTER_API_KEY")
         if not key:
@@ -123,7 +124,8 @@ class DecisionsClient:
             )
         self._api_key = key
         self.cache_dir = Path(cache_dir) if cache_dir is not None else DEFAULT_CACHE_DIR
-        self.guard = CostGuard(max_cost)
+        # A shared guard lets several worker-thread clients enforce one budget.
+        self.guard = guard if guard is not None else CostGuard(max_cost)
         self.timeout = timeout
         self.max_retries = max(0, int(max_retries))
         self.backoff = backoff
