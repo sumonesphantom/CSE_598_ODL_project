@@ -388,9 +388,10 @@ def test_summary_metrics():
     assert entry["damage_hit"] == pytest.approx(0.5)
     assert entry["relation_n"] == 2
     assert entry["relation_hit"] == pytest.approx(0.5)
-    assert entry["relation_hybrid"] == pytest.approx(1.0)
+    assert entry["relation_hybrid_coverage"] == pytest.approx(1.0)
     assert entry["utility"] == pytest.approx(2 / 3)
     assert entry["degraded_correct"] == pytest.approx(2 / 3)
+    assert entry["error_rate"] == pytest.approx(0.0)
     assert entry["latency_p50_ms"] == pytest.approx(20.0)
 
     per_condition = module.per_condition_table(rows)

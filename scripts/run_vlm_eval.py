@@ -133,6 +133,7 @@ ROW_FIELDS = [
     "degraded_correct",
     "latency_ms",
     "cached",
+    "error",
     "text",
 ]
 
@@ -145,9 +146,10 @@ SUMMARY_FIELDS = [
     "damage_hit",
     "relation_n",
     "relation_hit",
-    "relation_hybrid",
+    "relation_hybrid_coverage",
     "utility",
     "degraded_correct",
+    "error_rate",
     "latency_p50_ms",
     "latency_p95_ms",
     "cached_rate",
@@ -363,10 +365,20 @@ def ask_case(
     images, prompt = build_config(
         config, image, evidence, depth=depth, detector=detector
     )
-    response = client.ask(
-        images, prompt, cache_key=cache_key(record.image_id, name, level, config)
-    )
-    answer = parse_vlm_answer(response.text)
+    error = None
+    try:
+        response = client.ask(
+            images, prompt, cache_key=cache_key(record.image_id, name, level, config)
+        )
+        text = response.text
+        latency_ms = float(getattr(response, "latency_ms", 0.0))
+        cached = bool(getattr(response, "cached", False))
+    except Exception as exc:  # one failed case must not end the run
+        text = ""
+        latency_ms = 0.0
+        cached = False
+        error = str(exc)
+    answer = parse_vlm_answer(text)
     parse_ok = answer is not None
     if answer is None:
         answer = {
@@ -407,9 +419,10 @@ def ask_case(
         "confidence": answer["confidence"],
         "rationale": answer["rationale"],
         **scored,
-        "latency_ms": float(getattr(response, "latency_ms", 0.0)),
-        "cached": bool(getattr(response, "cached", False)),
-        "text": response.text,
+        "latency_ms": latency_ms,
+        "cached": cached,
+        "error": error,
+        "text": text,
     }
 
 
@@ -425,7 +438,8 @@ def evaluate_record(
     """All rows for one image: degraded conditions plus optional clean controls."""
     height, width = clean.shape[:2]
     entity = region_evidence(near_mask(depth, 0.4), depth)
-    clean_prediction = classifier.predict_label(clean)
+    clean_candidates = list(classifier.predict_candidates(clean))
+    clean_prediction = clean_candidates[0][0] if clean_candidates else ""
     true_class = record.class_name
     rows: list[dict] = []
 
@@ -453,7 +467,7 @@ def evaluate_record(
                 depth_layout=depth_layout(depth),
                 stats=image_statistics(degraded),
             )
-            degraded_prediction = classifier.predict_label(degraded)
+            degraded_prediction = evidence.candidates[0][0] if evidence.candidates else ""
             for config in args.configs:
                 rows.append(
                     ask_case(
@@ -477,7 +491,7 @@ def evaluate_record(
     if getattr(args, "include_clean", False):
         evidence = SceneEvidence(
             (width, height),
-            list(classifier.predict_candidates(clean)),
+            list(clean_candidates),
             entity=entity,
             damaged=None,
             depth_layout=depth_layout(depth),
@@ -538,7 +552,8 @@ def summary_table(rows: Sequence[dict]) -> list[dict]:
         sub = df[df["config"] == config]
         eligible = sub[_bools(sub["damage_eligible"])]
         relations = sub[sub["relation_hit"].notna()]
-        latencies = pd.to_numeric(sub["latency_ms"], errors="coerce").to_numpy(dtype=float)
+        live = sub[~_bools(sub["cached"])]
+        latencies = pd.to_numeric(live["latency_ms"], errors="coerce").to_numpy(dtype=float)
         summary.append(
             {
                 "config": config,
@@ -549,11 +564,16 @@ def summary_table(rows: Sequence[dict]) -> list[dict]:
                 "damage_hit": _mean(eligible["damage_hit"]) if len(eligible) else float("nan"),
                 "relation_n": int(len(relations)),
                 "relation_hit": _mean(relations["relation_hit"]) if len(relations) else float("nan"),
-                "relation_hybrid": float(
+                "relation_hybrid_coverage": float(
                     sub["relation_hybrid"].fillna("unclear").ne("unclear").mean()
                 ),
                 "utility": float(_bools(sub["utility"]).mean()),
                 "degraded_correct": float(_bools(sub["degraded_correct"]).mean()),
+                "error_rate": float(
+                    (sub["error"] if "error" in sub else pd.Series([None] * len(sub)))
+                    .notna()
+                    .mean()
+                ),
                 "latency_p50_ms": (
                     float(np.percentile(latencies, 50)) if len(latencies) else float("nan")
                 ),
@@ -632,7 +652,7 @@ def _print_table(summary: Sequence[dict]) -> None:
             f"{float(row['parse_rate']):>7.3f} {float(row['entity_hit']):>7.3f} "
             f"{int(row['damage_n']):>6} {float(row['damage_hit']):>7.3f} "
             f"{int(row['relation_n']):>6} {float(row['relation_hit']):>7.3f} "
-            f"{float(row['relation_hybrid']):>7.3f} {float(row['utility']):>7.3f} "
+            f"{float(row['relation_hybrid_coverage']):>7.3f} {float(row['utility']):>7.3f} "
             f"{float(row['latency_p50_ms']):>8.1f}"
         )
 
