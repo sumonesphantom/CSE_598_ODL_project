@@ -27,18 +27,18 @@ from .perturbations import ALL_PERTURBATIONS, LEVELS, rng_for
 
 TAXONOMIES: dict[str, dict[str, str]] = {
     "family": {
-        "clean": "No visible degradation.",
+        "clean": "No visible degradation beyond the normal JPEG encoding of the dataset.",
         "occlusion": "Part of the scene is covered or removed.",
         "color": "The colors are inverted or removed.",
         "photometric": "The image is too dark, too bright, or too flat.",
         "blur": "The whole image is blurred.",
         "noise": "Sensor noise is visible.",
-        "compression": "JPEG compression artifacts are visible.",
+        "compression": "Strong blocky JPEG artifacts, clearly stronger than normal storage; 8x8 blocks are visible.",
         "boundary": "The outline of the main object is softened or erased.",
         "depth_selective": "The near object or the far background is altered, but not both.",
     },
     "weather": {
-        "clean": "No visible degradation.",
+        "clean": "No visible degradation beyond the normal JPEG encoding of the dataset.",
         "rain": "Rain streaks, raindrops on the lens, or wet haze.",
         "dust": "Sand or dust storm, yellow-brown haze, low contrast.",
         "other": "A different corruption: blur, noise, compression, occlusion, or lighting.",

@@ -238,7 +238,13 @@ def build_deciders(
     exemplars: Any | None = None,
 ) -> tuple[list[Any], list[dict]]:
     """Resolve CLI aliases into decider instances, recording unavailable ones."""
-    aliases = list(aliases if aliases is not None else getattr(args, "deciders", DEFAULT_DECIDERS))
+    raw_aliases = list(aliases if aliases is not None else getattr(args, "deciders", DEFAULT_DECIDERS))
+    aliases = [
+        piece.strip()
+        for alias in raw_aliases
+        for piece in str(alias).split(",")
+        if piece.strip()
+    ]
     taxonomy = getattr(args, "taxonomy", "family")
     degraded_label = majority_condition(taxonomy)
     evidence_mode = getattr(args, "evidence_mode", "stats")
@@ -760,7 +766,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--data-root", type=Path, default=None)
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--deciders", nargs="*", default=list(DEFAULT_DECIDERS))
-    parser.add_argument("--evidence-mode", choices=EVIDENCE_MODES, default="stats")
+    parser.add_argument("--evidence-mode", choices=EVIDENCE_MODES, default="stats+image",
+                        help="stats = text features only; stats+image = features plus the image (default); image = image only")
     parser.add_argument("--include-detector", action="store_true")
     parser.add_argument("--include-candidates", action="store_true")
     parser.add_argument("--exemplars", type=int, choices=(0, 3, 6), default=0)

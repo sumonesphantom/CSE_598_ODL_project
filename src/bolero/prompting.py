@@ -264,17 +264,22 @@ def build_jev_questions(taxonomy: str = "family") -> dict:
         "degraded": {
             "type": "noul",
             "instructions": (
-                "Decide whether this view is degraded compared with a clean view of the "
-                "same scene. Answer true if any visible corruption is present."
+                "Decide whether this view is degraded beyond the normal JPEG encoding of "
+                "the dataset. Answer true only if a clear corruption such as blur, noise, "
+                "occlusion, color change, or strong compression is visible."
             ),
             "criteria": {
-                "true": "Visible degradation such as blur, noise, occlusion, color change, or compression.",
-                "false": "The view looks clean, with no visible degradation.",
+                "true": "Visible degradation such as blur, noise, occlusion, color change, or strong compression.",
+                "false": "The view looks clean, with no visible degradation beyond ordinary JPEG storage.",
             },
         },
         "condition": {
             "type": "choice",
-            "instructions": "Choose the single condition that best describes the visible degradation.",
+            "instructions": (
+                "Choose the single condition that best describes the visible degradation. "
+                "Every image is stored as JPEG, so ordinary JPEG encoding is not a degradation: "
+                "choose compression only when blocking is clearly stronger than normal storage."
+            ),
             "criteria": dict(TAXONOMIES[taxonomy]),
         },
         "severity": {

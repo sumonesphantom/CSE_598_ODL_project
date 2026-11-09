@@ -352,3 +352,11 @@ def test_hosted_call_counter_ignores_cache(tmp_path):
     live = FakeHostedDecider("jev", cached=False)
     module._process_sample(make_sample(1), [live], args, None, None, counter, {}, None)
     assert counter.value == 1
+
+
+def test_deciders_accept_comma_separated_list(tmp_path):
+    module = load_script()
+    args = make_args(tmp_path)
+    deciders, skipped = module.build_deciders(args, ["majority,always_clean"])
+    assert [decider.name for decider in deciders] == ["majority", "always_clean"]
+    assert skipped == []
