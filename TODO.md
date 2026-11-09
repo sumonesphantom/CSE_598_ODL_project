@@ -85,12 +85,15 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
 - [ ] Retrain the RF condition detector on SDSI / VIRADA so it recognizes real rain and dust
 
 ## Sachin: Decision engine (Jev alternatives) + VLM
-- [ ] Read the in-context learning paper from the professor (internal, do not share)
-- [ ] Serialize `SceneEvidence` (`prompting.py`) for the deciders: `noul` "is the view degraded?", `choice` "rain / dust / clean", `score` severity 1–3
-- [ ] Compare deciders: RF detector vs Laya vs open-alternative-jev (small Qwen) vs poorjev; optional Jev baseline if we get access. Metrics: routing accuracy, clean false alarms, latency
-- [ ] Recalibrate each decider with Venkat's conformal gate before gating on it
-- [ ] Choose a VLM (local Qwen2.5-VL / LLaVA) and feed it `prompting.build_prompt` output plus the image; compare image only vs image + evidence on occlusion images, ablating each evidence field
-- [ ] Define the VLM scoring: does it name the hidden entity / its relation correctly?
+- [x] Read the in-context learning paper from the professor (internal, do not share). The instruction taxonomy is mapped in the README
+- [x] Serialize `SceneEvidence` (`prompting.py`) for the deciders: `noul` "is the view degraded?", `choice` condition, `score` severity 1–3 (`conditions.py`, `build_jev_questions`)
+- [x] Compare deciders on the OpenRouter Decisions API: RF vs Jev 1.14 vs Clef Flash vs Perplexity Decider Flash vs Liquid d1 vs Joey 1, plus a local Qwen prompt-and-parse adapter. Laya and poorjev were dropped as install-risk alternatives and documented. Metrics: routing accuracy, clean false alarms, severity MAE, latency, cost (`scripts/run_decider_compare.py`)
+- [x] Probe image resolution limits: Jev needs >=280 px; Imagenette2-320 is the common input (`scripts/probe_resolutions.py`)
+- [ ] Recalibrate each decider with Venkat's conformal gate before gating on it. `results/deciders/main/scores.csv` is ready; a split-half threshold sweep is in the README, but the real split-conformal threshold waits on `conformal.py`
+- [x] Choose a VLM (Qwen2.5-VL-3B) and compare image only vs image + evidence, with text, overlay, depth-image and field ablations (`scripts/run_vlm_eval.py`)
+- [x] Define the VLM scoring: entity match, damage match (only when it overlaps the entity), geometric relation with a VLM fallback, and label utility (`vlm_scoring.py`)
+- [x] Build the 30-case human review packet and agreement/kappa scorer (`scripts/make_vlm_review.py`); run it on the final VLM predictions
+- [ ] Rerun the decider comparison on the `weather` taxonomy once Aravind's physics rain/dust perturbations land; retrain the RF on those classes
 
 ## Kushi: Literature, failure analysis + attacks
 - [ ] Summarize the professor's papers (incl. Aditya's DARPA/ECML paper): method, dataset, metric, what we can reuse
