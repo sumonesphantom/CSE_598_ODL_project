@@ -545,6 +545,8 @@ def test_build_hf_prompt_contains_schema_and_evidence():
     assert "severity" in prompt.lower()
     assert "128" in prompt
     assert "```json" not in prompt
+    assert "Example clean" in prompt
+    assert "Use severity 1 when the view is clean" in prompt
 
 
 def test_build_hf_prompt_excludes_detector_by_default():

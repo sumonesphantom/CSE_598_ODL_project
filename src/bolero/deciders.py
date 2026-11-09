@@ -407,13 +407,16 @@ def build_hf_prompt(evidence: SceneEvidence, taxonomy: str = "family", include_d
         "Severity levels:\n"
         "1 = mild\n"
         "2 = moderate\n"
-        "3 = severe\n\n"
+        "3 = severe\n"
+        "Use severity 1 when the view is clean.\n\n"
         "Evidence (JSON):\n"
         f"{evidence_json}\n\n"
         "Answer with one JSON object and nothing else. Use exactly this schema:\n"
         '{"degraded": true, "condition": "blur", "severity": 1, "confidence": 0.0}\n'
         '"degraded" must be a boolean, "condition" one of the allowed labels, '
-        '"severity" an integer from 1 to 3, and "confidence" a number from 0 to 1.'
+        '"severity" an integer from 1 to 3, and "confidence" a number from 0 to 1.\n'
+        'Example clean: {"degraded": false, "condition": "clean", "severity": 1, "confidence": 0.9}\n'
+        'Example degraded: {"degraded": true, "condition": "blur", "severity": 3, "confidence": 0.8}'
     )
 
 
@@ -523,8 +526,18 @@ class HFTextDecider:
         if severity is not None and not 1 <= severity <= 3:
             severity = None
 
+        # A prompt-and-parse pipeline has to reconcile the clean case: a clean
+        # answer has no condition label and no meaningful severity.
+        if degraded is False:
+            condition = "clean"
+            severity = severity or 1
+
         confidence = _number(parsed.get("confidence"))
-        parse_ok = degraded is not None and condition is not None and severity is not None
+        parse_ok = (
+            degraded is not None
+            and condition is not None
+            and (severity is not None or degraded is False)
+        )
 
         if degraded is None:
             p_degraded = None
