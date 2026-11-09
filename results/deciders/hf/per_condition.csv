@@ -1,0 +1,11 @@
+decider,true_condition,n,degraded_recall,condition_accuracy,severity_mae
+hf,blur,9,1.0,1.0,1.0
+hf,boundary,12,1.0,0.0,1.0
+hf,clean,3,0.0,0.0,0.0
+hf,color,18,1.0,0.0,1.0
+hf,compression,9,1.0,0.0,1.0
+hf,depth_selective,18,1.0,0.0,1.0
+hf,mixed,6,1.0,0.0,1.0
+hf,noise,9,1.0,0.0,1.0
+hf,occlusion,9,1.0,0.0,1.0
+hf,photometric,27,1.0,0.0,1.0

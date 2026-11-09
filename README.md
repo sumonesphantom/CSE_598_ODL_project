@@ -511,6 +511,14 @@ this exact synthetic suite. It also has no rain or dust classes, so it cannot
 serve the weather taxonomy without retraining, which is where a zero-shot
 decision model is expected to matter.
 
+The local prompt-and-parse baseline is worth stating separately. Qwen2.5-1.5B
+with the same image statistics as text, on 120 samples, parsed every output
+after the prompt was fixed, but collapsed to `blur` with severity 3 for almost
+every input: degraded accuracy 0.975 (it always says degraded), clean false
+alarm 1.000, condition accuracy 0.075, macro F1 0.014, p50 2,028 ms. A small chat
+model with a JSON prompt is not a reliable router. That is the gap Jev's typed
+questions and per-option probabilities close.
+
 Per-condition accuracy shows where each one lives:
 
 | Condition | Jev | RF | Best other decision model |
