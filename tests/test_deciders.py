@@ -545,3 +545,19 @@ def test_build_hf_prompt_contains_schema_and_evidence():
     assert "severity" in prompt.lower()
     assert "128" in prompt
     assert "```json" not in prompt
+
+
+def test_build_hf_prompt_excludes_detector_by_default():
+    assert "gaussian_blur" not in build_hf_prompt(make_evidence(), "family")
+    assert "gaussian_blur" in build_hf_prompt(make_evidence(), "family", include_detector=True)
+
+
+def test_jev_confidence_falls_back_to_max_probability(image):
+    answers = {
+        "degraded": {"noul": 0.9},
+        "condition": {"choice": "blur", "probabilities": {"blur": 0.6, "noise": 0.4}},
+        "severity": {"score": 1.2, "confidence": 0.99},
+    }
+    client = FakeClient(answers=answers)
+    out = JevDecider("jev", client, "typesafe/jev-1.14").decide(make_sample(image), make_evidence())
+    assert out.confidence == pytest.approx(0.6)

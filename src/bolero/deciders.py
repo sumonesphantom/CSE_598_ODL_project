@@ -365,8 +365,6 @@ class JevDecider:
                     probabilities[label] = probability
 
         confidence = _number(condition_answer.get("confidence"))
-        if confidence is None:
-            confidence = _number(severity_answer.get("confidence"))
         if confidence is None and probabilities:
             confidence = max(probabilities.values())
 
@@ -395,15 +393,16 @@ class JevDecider:
 # ---------------------------------------------------------------------------
 
 
-def build_hf_prompt(evidence: SceneEvidence, taxonomy: str = "family") -> str:
+def build_hf_prompt(evidence: SceneEvidence, taxonomy: str = "family", include_detector: bool = False) -> str:
     """Text-only prompt for a local instruction model, asking for one JSON object."""
     if taxonomy not in TAXONOMIES:
         raise ValueError(f"unknown taxonomy {taxonomy!r}; choose from {sorted(TAXONOMIES)}")
     labels = "\n".join(f"- {name}: {description}" for name, description in TAXONOMIES[taxonomy].items())
-    evidence_json = json.dumps(evidence.to_state(include_detector=True), indent=2, sort_keys=True)
+    evidence_json = json.dumps(evidence.to_state(include_detector=include_detector), indent=2, sort_keys=True)
     return (
-        "You are inspecting an image that may be degraded. Using the evidence below, decide "
-        "whether the view is degraded, name the single best condition label, and rate severity.\n\n"
+        "You are given structured evidence about an image that may be degraded. "
+        "Using only the evidence below, decide whether the view is degraded, name the "
+        "single best condition label, and rate severity.\n\n"
         f"Allowed condition labels:\n{labels}\n\n"
         "Severity levels:\n"
         "1 = mild\n"
@@ -427,6 +426,8 @@ class HFTextDecider:
         model: str = "Qwen/Qwen2.5-1.5B-Instruct",
         taxonomy: str = "family",
         max_new_tokens: int = 96,
+        device: str | None = None,
+        include_detector: bool = False,
     ) -> None:
         if taxonomy not in TAXONOMIES:
             raise ValueError(f"unknown taxonomy {taxonomy!r}; choose from {sorted(TAXONOMIES)}")
@@ -434,6 +435,8 @@ class HFTextDecider:
         self.model_name = model
         self.taxonomy = taxonomy
         self.max_new_tokens = int(max_new_tokens)
+        self.device = device
+        self.include_detector = include_detector
         self._tokenizer: Any | None = None
         self._model: Any | None = None
 
@@ -448,11 +451,19 @@ class HFTextDecider:
     def _ensure_loaded(self) -> None:
         if self._model is not None and self._tokenizer is not None:
             return
+        import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
+        from .config import get_device
+
+        device = get_device(self.device)
+        dtype = torch.float16 if device.type in ("mps", "cuda") else torch.float32
         self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        self._model = AutoModelForCausalLM.from_pretrained(self.model_name)
-        self._model.eval()
+        self._model = (
+            AutoModelForCausalLM.from_pretrained(self.model_name, dtype=dtype)
+            .to(device)
+            .eval()
+        )
 
     def _error(self, started: float, message: str) -> DeciderOutput:
         return DeciderOutput(
@@ -469,7 +480,7 @@ class HFTextDecider:
         except Exception as exc:
             return self._error(started, f"model load failed: {exc}")
 
-        prompt = build_hf_prompt(evidence, self.taxonomy)
+        prompt = build_hf_prompt(evidence, self.taxonomy, include_detector=self.include_detector)
         messages = [{"role": "user", "content": prompt}]
         try:
             text = self._tokenizer.apply_chat_template(
