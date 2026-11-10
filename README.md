@@ -15,10 +15,12 @@ CSE 598: Operationalizing Deep Learning (Fall 2026), group project.
 5. [Setup](#setup)
 6. [Running the pipeline](#running-the-pipeline)
 7. [Outputs](#outputs)
-8. [Repository layout](#repository-layout)
-9. [Earlier result: the depth-layer reconstruction audit](#earlier-result-the-depth-layer-reconstruction-audit)
-10. [Known gaps and limitations](#known-gaps-and-limitations)
-11. [Generative AI disclosure](#generative-ai-disclosure)
+8. [Decision engine: Jev and OpenRouter](#decision-engine-jev-and-openrouter)
+9. [VLM evidence and manual review](#vlm-evidence-and-manual-review)
+10. [Repository layout](#repository-layout)
+11. [Earlier result: the depth-layer reconstruction audit](#earlier-result-the-depth-layer-reconstruction-audit)
+12. [Known gaps and limitations](#known-gaps-and-limitations)
+13. [Generative AI disclosure](#generative-ai-disclosure)
 
 ---
 
@@ -298,10 +300,16 @@ export IMAGENETTE_ROOT=/path/to/imagenette2-160
 ```
 
 **Models.** The scripts download ResNet-50 (about 100 MB) and Depth-Anything-V2-Small
-(about 100 MB) from Hugging Face on first use. Hugging Face caches them in
+(about 100 MB) from Hugging Face on first use. The VLM evaluation also downloads
+`Qwen/Qwen2.5-VL-3B-Instruct` (about 6 GB). Hugging Face caches them in
 `~/.cache/huggingface`.
 
-**Tests.** The 76 unit tests run on synthetic images and need no model download:
+**OpenRouter.** The decision-engine comparison needs an OpenRouter key. Copy
+`.env.example` to `.env` and set `OPENROUTER_API_KEY`. The key is gitignored and is
+never written to a cache or a log. A full comparison of five hosted models costs
+well under one dollar.
+
+**Tests.** The 197 unit tests run on synthetic images and need no model download:
 
 ```bash
 pytest
@@ -328,6 +336,13 @@ python scripts/tune_strengths.py --per-class 10   # choose strengths on the trai
 python scripts/run_restoration.py --per-class 50  # Stage 3 (val split)
 python scripts/run_cue_sweep.py --per-class 50    # cue stability on clean train images
 python scripts/analyze.py                         # figures + results/SUMMARY.md
+
+# decision engine and VLM (320 px; Jev needs OPENROUTER_API_KEY in .env)
+python scripts/prepare_data.py --version 320
+python scripts/probe_resolutions.py
+python scripts/run_decider_compare.py --help
+python scripts/run_vlm_eval.py --help
+python scripts/make_vlm_review.py --help
 ```
 
 Useful flags (every script takes `--help`):
@@ -395,11 +410,339 @@ results/
 │   ├── cue_depth_source.png             each cue with perturbed / clean / mismatched depth
 │   └── cue_sweep.png                    clean-image prediction change vs. cue strength
 ├── SUMMARY.md              headline numbers, tables and figures in one page
+├── deciders/               Jev comparison: summary.csv, per_condition.csv, scores.csv,
+│                           resolution_probe.csv, cache/ (gitignored)
+├── vlm/                    VLM evaluation: summary.csv, per_condition.csv, predictions,
+│   │                       cache/ (gitignored)
+│   └── review/             review.csv, contact_sheet.html, thumbnails
 └── audit/                  outputs of notebooks/02_bolero_audit.ipynb
 ```
 
 Git ignores the per-row records because the scripts regenerate them. Commit the
 summaries, figures and `SUMMARY.md`; they are small.
+
+---
+
+## Decision engine: Jev and OpenRouter
+
+The direction after the presentation was to test a *decision model* rather than a
+prompt-and-parse pipeline. Jev is TypeSafe's System One decision model: it answers
+typed `noul` (yes/no), `choice`, and `score` questions and returns probabilities,
+not prose. We call it through OpenRouter's Decisions API. This is not the
+chat-completions endpoint, so the request shape is specific:
+
+```python
+POST https://openrouter.ai/api/alpha/decisions
+Authorization: Bearer $OPENROUTER_API_KEY
+
+{"model": "typesafe/jev-1.14",
+ "state": [{"evidence": {...}},
+           {"type": "image_url",
+            "image_url": {"url": "data:image/jpeg;base64,..."}}],
+ "questions": {
+   "degraded": {"type": "noul", "instructions": "...", "criteria": {...}},
+   "condition": {"type": "choice", "instructions": "...", "criteria": {...}},
+   "severity":  {"type": "score", "instructions": "...", "criteria": [...]}}}
+```
+
+One request carries all three questions. `answers.degraded.noul` is P(degraded),
+`answers.condition.choice` is the label with a probability for every option, and
+`answers.severity.score` is a 0-indexed position, so the reported severity is
+`round(score) + 1`. The client caches every response by request hash, retries
+429/5xx with backoff, enforces a dollar budget, and never writes the key to disk.
+
+### Image resolution
+
+TypeSafe rejects images whose sides are outside 280 to 1,568 px (the API never
+resizes). The other Decisions models publish no minimum. We probed one real
+image at four short-side resolutions:
+
+| Model | 160 px | 224 px | 280 px | 320 px |
+|---|---|---|---|---|
+| Jev 1.14 | reject (400) | reject (400) | accept | accept |
+| Clef Flash | accept | accept | accept | accept |
+| Perplexity Decider Flash | accept | accept | accept | accept |
+| Liquid d1 | accept | accept | accept | accept |
+| Joey 1 | accept | accept | accept | accept |
+
+The decision-engine and VLM experiments therefore use **Imagenette2-320**, the
+native 320 px release of the same dataset, so no model needs upscaling. The
+classifier track keeps Imagenette2-160. Artifact:
+`results/deciders/resolution_probe.csv`.
+
+### Deciders compared
+
+| Alias | What it is |
+|---|---|
+| `majority` | Always degraded, most frequent degraded family, severity 2 |
+| `rf` | Random forest on hand-crafted image statistics, trained on the 320 px train split, plus a severity forest |
+| `jev` | `typesafe/jev-1.14` through OpenRouter |
+| `clef-flash` | `cloudflare/clef-flash` |
+| `pplx-decider-flash` | `perplexity/pplx-decider-flash-v1.2` |
+| `d1` | `liquid/d1` |
+| `joey-1` | `baseten/joey-1` |
+
+Laya and poorjev are alternative decision models and were considered but not
+used: both are a few weeks old, their numbers are self-reported, and installing
+them adds risk without improving the comparison. The OpenRouter alternatives use
+the same request shape, so the comparison is like-for-like.
+
+### Main result
+
+560 samples per decider from 50 val images, with each condition-severity bucket
+capped at 20. Images are 320 px. Evidence is the image plus compact image
+statistics; the RF's own output is **not** in the evidence, so the comparison is
+not circular. Total API cost was about $0.07.
+
+| Decider | Degraded acc | Clean false alarm | Condition acc | Macro F1 | Severity MAE | p50 ms | Cost |
+|---|---|---|---|---|---|---|---|
+| Jev 1.14 | **0.918** | 0.200 | **0.559** | **0.484** | 0.580 | 234 | $0.034 |
+| Clef Flash | 0.609 | 0.050 | 0.275 | 0.208 | 0.592 | 495 | $0.021 |
+| Decider Flash | 0.537 | 0.050 | 0.438 | 0.399 | 0.570 | 361 | $0.005 |
+| Liquid d1 | 0.621 | 0.100 | 0.371 | 0.337 | 0.628 | 449 | $0.010 |
+| Joey 1 | 0.475 | 0.000 | 0.338 | 0.322 | 0.626 | 306 | $0.005 |
+| RF (trained) | 0.707 | 0.100 | **0.652** | **0.637** | **0.331** | 104 | $0 |
+| Majority | 0.964 | 1.000 | 0.107 | 0.019 | 0.667 | 0 | $0 |
+
+Jev is the strongest of the five zero-shot decision models: it recovers the
+condition far more often than Clef Flash, Decider Flash, Liquid d1 or Joey 1, at
+a comparable price. The trained RF still wins overall because it was trained on
+this exact synthetic suite. It also has no rain or dust classes, so it cannot
+serve the weather taxonomy without retraining, which is where a zero-shot
+decision model is expected to matter.
+
+The local prompt-and-parse baseline is worth stating separately. Qwen2.5-1.5B
+with the same image statistics as text, on 120 samples, parsed every output
+after the prompt was fixed, but collapsed to `blur` with severity 3 for almost
+every input: degraded accuracy 0.975 (it always says degraded), clean false
+alarm 1.000, condition accuracy 0.075, macro F1 0.014, p50 2,028 ms. A small chat
+model with a JSON prompt is not a reliable router. That is the gap Jev's typed
+questions and per-option probabilities close.
+
+Per-condition accuracy shows where each one lives:
+
+| Condition | Jev | RF | Best other decision model |
+|---|---|---|---|
+| occlusion | 1.00 | 0.97 | 1.00 |
+| photometric | 0.97 | 0.93 | 0.87 |
+| noise | 0.83 | 0.97 | 0.52 |
+| compression | 0.80 | 0.83 | 0.33 |
+| blur | 0.67 | 0.88 | 0.72 |
+| color | 0.55 | 0.63 | 0.28 |
+| clean | 0.80 | 0.90 | 1.00 |
+| boundary | 0.05 | 0.22 | 0.35 |
+| depth selective | 0.08 | 0.35 | 0.00 |
+| mixed (held out) | 0.00 | 0.00 | 0.00 |
+
+Jev is strong on photometric, noise, compression and occlusion. It is weak on
+boundary and depth-selective damage, where the damage is a local outline change
+that a global image description barely captures. The RF sees the same global
+statistics but was trained on those labels.
+
+### Evidence ablation (Jev, 120 samples)
+
+| Evidence | Degraded acc | Condition acc | Clean false alarm | p50 ms | Cost |
+|---|---|---|---|---|---|
+| statistics only | 0.058 | 0.033 | 0.000 | 212 | $0.005 |
+| image only | 0.908 | 0.550 | 0.333 | 231 | $0.006 |
+| image + statistics | 0.883 | 0.533 | 0.333 | 232 | $0.007 |
+| image + statistics + 3 exemplars | 0.908 | 0.567 | 0.333 | 246 | $0.013 |
+| image + statistics + detector output | 0.925 | 0.675 | 0.333 | 233 | $0.008 |
+
+The negative result is the useful one: **text statistics alone are near-random**.
+The model needs the image. Structured statistics add little on top of it, three
+in-context exemplars add about 3 pp, and the RF detector field adds about 14 pp
+but is circular for the routing comparison, so it is reported only as a field
+ablation. Clean false alarms are measured on the 50 clean images in this
+120-sample subset, so the 0.333 is noisier than the main run's 0.200 over the
+full 50-image clean bucket.
+
+### Conformal handoff
+
+`results/deciders/main/scores.csv` has one row per decider and image with
+`p_degraded`, the predicted decision and whether it was correct. A simple
+split-half sweep on those scores shows the trade-off Venkat's split-conformal
+gate will formalize:
+
+| Decider | Threshold at 0% clean false alarm | Held-out degraded recall |
+|---|---|---|
+| Jev | 0.78 | 0.664 |
+| RF | 0.91 | 0.838 |
+
+At the default 0.5 threshold Jev's degraded recall is 0.922 but its clean false
+alarm is 0.200. Raising the threshold to 0.78 removes the false alarms on the
+calibration half at the cost of about 26 pp of recall. That is the coverage
+budget the report should state, and the reason the gate belongs in the pipeline
+rather than on a hand-set number.
+
+### Reproduce
+
+```bash
+# 320 px detection baseline (RF decider)
+IMAGENETTE_VERSION=320 python scripts/train_detector.py \
+  --train-per-class 20 --val-per-class 10 \
+  --out results/deciders/detector320 --depth-root data/cache/depth-320
+
+# main comparison (needs OPENROUTER_API_KEY in .env)
+python scripts/run_decider_compare.py \
+  --per-class 5 --max-per-condition 20 \
+  --deciders majority,rf,jev,clef-flash,pplx-decider-flash,d1,joey-1 \
+  --data-root data/imagenette2-320 --evidence-mode stats+image \
+  --rf-detector results/deciders/detector320/detector.joblib \
+  --max-calls 20000 --max-cost 2.0 --workers 4
+
+# resolution probe
+python scripts/probe_resolutions.py
+
+# Jev evidence ablations (same first 120 samples)
+python scripts/run_decider_compare.py --per-class 5 --max-per-condition 20 \
+  --deciders jev --evidence-mode stats --limit 120 --out results/deciders/jev_stats
+python scripts/run_decider_compare.py --per-class 5 --max-per-condition 20 \
+  --deciders jev --evidence-mode image --limit 120 --out results/deciders/jev_image
+python scripts/run_decider_compare.py --per-class 5 --max-per-condition 20 \
+  --deciders jev --evidence-mode stats+image --exemplars 3 --limit 120 \
+  --out results/deciders/jev_icl3
+```
+
+---
+
+## VLM evidence and manual review
+
+The second question is whether a local vision-language model can reason about
+what an occluded region contains, and whether structured evidence helps. We use
+`Qwen/Qwen2.5-VL-3B-Instruct` locally on MPS. The experiment follows the
+professor's instruction taxonomy directly:
+
+| Paper's instruction form | Where it appears |
+|---|---|
+| Structural | Strict JSON output schema (`entity`, `damaged_region_content`, `relation`, `confidence`, `rationale`) |
+| In-context | The Jev exemplar ablation above; the VLM prompt carries the same rubric |
+| Knowledge-guided | Classifier candidates, detector output, depth layout and region boxes in the evidence text |
+| Spatial | Box coordinates as text, numbered overlay on the image, depth map as a second image, geometric relation check |
+| Temporal / global | Out of scope for this project |
+
+The entity region comes from the **clean** depth map (`near_mask(depth, 0.4)`).
+That is idealized and is used for scoring and for the overlay only, so the score
+does not reward the VLM for agreeing with a wrong detector box.
+
+### Configurations
+
+| Config | Input |
+|---|---|
+| `none` | degraded image, base instruction |
+| `text` | degraded image plus structured evidence text |
+| `overlay` | degraded image with green entity and red damaged boxes |
+| `overlay+text` | overlay image plus evidence text |
+| `overlay+depth` | overlay image plus the clean depth map as a second image |
+| `minus_candidates` | text config without classifier candidates |
+| `minus_depth` | text config without the depth layout |
+| `minus_regions` | text config without region boxes |
+| `with_detector` | text config with the 320 px detector's label and probability |
+
+The auto-score is a proxy, not ground truth. `entity_hit` matches the VLM's
+entity against the true class or the clean classifier's top-1, using a
+conservative alias table. `damage_hit` is only scored when the damaged box
+overlaps the entity box by more than 30%, because otherwise naming the class in
+that region is not evidence of reasoning. `relation_hit` compares the VLM's
+relation with the geometric bucket (overlaps / adjacent / background), and
+`relation_hybrid_coverage` reports how often the geometric check can answer
+without the VLM, mirroring the paper's Set-of-Mark case study.
+
+### Results
+
+The main grid is 10 validation images, four occlusion conditions at level 2, four
+configs, plus clean controls. Repeat it with:
+
+```bash
+python scripts/run_vlm_eval.py \
+  --per-class 1 \
+  --conditions region_removal,foreground_occlusion,boundary_erase,background_removal \
+  --levels 2 --configs none,text,overlay,overlay+text \
+  --out results/vlm/main
+```
+
+Results are in `results/vlm/main/summary.csv` and `per_condition.csv`.
+
+| Config | n | Parse | Entity hit | Damage hit (n) | Relation hit (n) | Utility | Degraded acc | p50 ms |
+|---|---|---|---|---|---|---|---|---|
+| `none` | 50 | 1.00 | 0.400 | 0.150 (40) | 0.725 (40) | 0.400 | 0.840 | 6,267 |
+| `text` | 50 | 1.00 | 0.760 | 0.350 (40) | 0.825 (40) | 0.700 | 0.840 | 8,726 |
+| `overlay` | 40 | 1.00 | 0.325 | 0.125 (40) | 0.900 (40) | 0.325 | 0.825 | 6,053 |
+| `overlay+text` | 40 | 1.00 | **0.775** | 0.300 (40) | 0.800 (40) | **0.750** | 0.825 | 8,265 |
+
+(`none` and `text` also run on the 10 clean controls, hence n=50; the overlay
+configs are degraded-only, n=40. The relation hybrid coverage is 1.00: both
+boxes are always known, so the geometric check answers every relation.)
+
+What the table says:
+
+- **Text evidence is the main win.** Entity identification goes from 0.400 to
+  0.760, damage-content from 0.150 to 0.350, and label utility from 0.400 to
+  0.700. It costs about 2.4 s per call.
+- **The overlay alone does not help identity.** It drops entity hit to 0.325,
+  because the model attends to the drawn boxes rather than the object. It does
+  give the best relation score (0.900): the boxes make the spatial question
+  easy and distract from the harder identity question.
+- **Overlay plus text is the best config** on entity (0.775) and utility (0.750),
+  roughly tied with text, and more robust on relation than text alone. It is the
+  configuration to keep if latency is not the constraint.
+- **The VLM is not a better classifier.** Its utility (0.70 to 0.75) is below the
+  degraded classifier's 0.84. It is useful for describing what is missing, not
+  for replacing the recognizer.
+- **Naming the hidden content is the hard part.** Damage hit stays at 0.30 to
+  0.35 even with evidence, while the spatial relation is mostly correct. The
+  bottleneck is identity, not geometry.
+
+The grid is 10 images x 4 occlusion conditions x level 2 x 4 configs, plus 10
+clean controls, 180 rows. Generation took 929 s across 121 uncached calls; the
+cache hit rate was 33 % because an earlier interrupted run had already answered
+some cases. All 180 answers parsed as JSON.
+
+### Manual review: 30 cases
+
+The automatic labels are a proxy, so the packet asks a human to check 30 model
+outputs. The current packet is 10 images x 3 configs (`none`, `text`,
+`overlay+text`), which keeps every image while giving 30 judgments. Rebuild it
+with more images when the grid grows.
+
+```bash
+python scripts/make_vlm_review.py \
+  --predictions results/vlm/main/predictions.csv.gz \
+  --cases 30 --configs none,text,overlay+text \
+  --out results/vlm/review
+```
+
+This writes:
+
+- `review.csv`, one row per image and config, with empty
+  `manual_entity_correct`, `manual_damage_correct`, `manual_relation_correct`
+  and `notes` columns.
+- `contact_sheet.html`, one card per row with the clean, degraded and overlay
+  thumbnails, the VLM answer and the automatic score.
+
+How to judge each row:
+
+1. Open `contact_sheet.html` in a browser.
+2. Compare the **degraded** view with the **clean** view. The overlay shows the
+   entity box in green and the damaged region in red.
+3. Mark `manual_entity_correct` with `1` if the VLM named the real entity (`0`
+   otherwise). For `tench`, for example, "tench" or "fish" is correct but
+   "carp" is not.
+4. Mark `manual_damage_correct` with `1` only when the damaged region actually
+   covers the entity and the VLM described what is missing. Leave it blank when
+   the damaged region is background: the question does not apply.
+5. Mark `manual_relation_correct` with `1` when the stated relation matches what
+   you see, `0` otherwise. Leave it blank if the VLM said `unclear`.
+6. Run the agreement check:
+
+```bash
+python scripts/make_vlm_review.py --score results/vlm/review/review.csv
+```
+
+It prints agreement and Cohen's kappa for each field, overall and per config,
+and writes `agreement.json` next to the CSV. Blank manual cells are skipped. A
+single annotator (Sachin) checks the packet, so the result is a sanity check on
+the automatic labels, not an inter-annotator study.
 
 ---
 
@@ -421,10 +764,17 @@ CSE_598_ODL_project/
 │   ├── tuning.py          strength selection on dev data
 │   ├── restoration.py     classical restoration plans
 │   ├── detection.py       feature extraction and the conservative detector
+│   ├── conditions.py      degradation taxonomy and balanced sample provider
+│   ├── deciders.py        RF / Jev / local-LLM deciders and routing metrics
+│   ├── openrouter.py      OpenRouter Decisions API client (cache, retries, budget)
+│   ├── vlm.py             local Qwen2.5-VL client with a response cache
+│   ├── vlm_scoring.py     answer parsing and spatial scoring helpers
 │   ├── metrics.py         accuracy, transitions, recovery rate, ECE, PSNR, SSIM
 │   ├── records.py         prediction-table helpers
 │   └── plotting.py        shared figure style (CVD-validated palette)
 ├── scripts/               one script per stage, plus run_all.sh
+│   ├── probe_resolutions.py, run_decider_compare.py   decision-engine comparison
+│   └── run_vlm_eval.py, make_vlm_review.py            VLM evaluation and review
 ├── tests/                 unit tests on synthetic images
 ├── notebooks/
 │   ├── 02_bolero_audit.ipynb        audit of the original reconstruction (runs end-to-end)
@@ -477,6 +827,11 @@ To reproduce, open the notebook and run all cells. It writes to `results/audit/`
 7. **Depth is relative.** Depth-Anything-V2 returns depth normalized per image, so "near" and "far" mean near and far within that image, in no fixed unit.
 8. **The depth model plays two roles.** The boundary and depth-selective perturbations are built from Depth-Anything-V2's clean depth, and the cues use the same model. A second depth model, such as MiDaS v3.1, would separate the two.
 9. **Three severity levels.** Hendrycks & Dietterich (2019) use five per corruption.
+10. **Jev is nondeterministic.** TypeSafe reports slightly different probabilities between runs, so a single-sample comparison is noisy. Responses are cached for reproducibility, but the conformal threshold should be fit on a larger calibration sample than the 50 clean images here.
+11. **The weather taxonomy is not populated yet.** The main run uses the `family` taxonomy (clean plus the 14 perturbation families). The `weather` taxonomy (clean / rain / dust / other) is wired, but it needs the physics-based rain and dust perturbations from Aravind's track. The RF has no rain or dust classes, so it needs retraining before it can serve that task.
+12. **The 320 px detector uses fewer training images.** It was trained at 20/class (top-1 81.2 %, clean false alarm 5.0 %) instead of the 160 px baseline's 40/class (83.2 %, 5.5 %), so part of the gap is training size, not resolution.
+13. **The VLM automatic scores are a proxy.** `entity_hit` and `damage_hit` use class-label matching and a depth-derived region, not human ground truth. The 30-case packet measures how often the proxy agrees with a human; report the kappa from that run.
+14. **The VLM grid is small.** Ten images, one severity, four occlusion conditions. It is enough to compare evidence configurations, not to estimate real-world accuracy.
 
 ---
 

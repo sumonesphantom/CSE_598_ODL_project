@@ -28,7 +28,30 @@ SEGMENTERS = {
 }
 DEPTH_MODEL = "depth-anything/Depth-Anything-V2-Small-hf"
 
-IMAGENETTE_URL = "https://s3.amazonaws.com/fast-ai-imageclas/imagenette2-160.tgz"
+IMAGENETTE_VERSIONS = {
+    "160": "https://s3.amazonaws.com/fast-ai-imageclas/imagenette2-160.tgz",
+    "320": "https://s3.amazonaws.com/fast-ai-imageclas/imagenette2-320.tgz",
+}
+IMAGENETTE_URL = IMAGENETTE_VERSIONS["160"]
+DEFAULT_IMAGENETTE_VERSION = "160"
+
+# Decision models on OpenRouter's Decisions API (see openrouter.py).
+OPENROUTER_DECISIONS_URL = "https://openrouter.ai/api/alpha/decisions"
+JEV_MODEL = "typesafe/jev-1.14"
+DECISION_MODELS = {
+    "jev": "typesafe/jev-1.14",
+    "clef-flash": "cloudflare/clef-flash",
+    "pplx-decider-flash": "perplexity/pplx-decider-flash-v1.2",
+    "d1": "liquid/d1",
+    "joey-1": "baseten/joey-1",
+}
+
+# TypeSafe image limits (docs.typesafe.ai/images). The API rejects images
+# outside these bounds; it never resizes them.
+JEV_IMAGE_MIN_SIDE = 280
+JEV_IMAGE_MAX_SIDE = 1568
+JEV_IMAGE_MIN_PIXELS = 78_400
+JEV_IMAGE_MAX_PIXELS = 2_458_624
 
 # Imagenette wnid -> class name.
 IMAGENETTE_CLASSES = {
@@ -60,14 +83,40 @@ IMAGENETTE_INDEX = {
 }
 
 
-def find_imagenette_root() -> Path | None:
-    """Locate imagenette2-160: $IMAGENETTE_ROOT, then ./data, then the sibling course repo."""
+def load_env(path: Path | None = None) -> None:
+    """Load KEY=VALUE pairs from .env without overriding the real environment.
+
+    Values are never printed or logged. Missing files are ignored so the rest of
+    the pipeline keeps working without an OpenRouter key.
+    """
+    path = path or (REPO_ROOT / ".env")
+    if not path.is_file():
+        return
+    for raw in path.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip("\"'").strip()
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+def imagenette_dirname(version: str | None = None) -> str:
+    """Directory name for an Imagenette release, e.g. imagenette2-320."""
+    version = version or os.environ.get("IMAGENETTE_VERSION", DEFAULT_IMAGENETTE_VERSION)
+    return f"imagenette2-{version}"
+
+
+def find_imagenette_root(version: str | None = None) -> Path | None:
+    """Locate Imagenette: $IMAGENETTE_ROOT, then ./data, then the sibling course repo."""
     candidates = []
     if os.environ.get("IMAGENETTE_ROOT"):
         candidates.append(Path(os.environ["IMAGENETTE_ROOT"]))
     candidates += [
-        DATA_DIR / "imagenette2-160",
-        REPO_ROOT.parent / "clip_corruption_calibration" / "data" / "imagenette2-160",
+        DATA_DIR / imagenette_dirname(version),
+        REPO_ROOT.parent / "clip_corruption_calibration" / "data" / imagenette_dirname(version),
     ]
     for candidate in candidates:
         if (candidate / "val").is_dir():

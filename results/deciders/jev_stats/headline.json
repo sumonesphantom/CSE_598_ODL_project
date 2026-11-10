@@ -1,0 +1,85 @@
+{
+  "config": {
+    "per_class": 5,
+    "max_per_condition": 20,
+    "taxonomy": "family",
+    "perturbations": [
+      "region_removal",
+      "inversion",
+      "grayscale",
+      "low_contrast",
+      "darken",
+      "brighten",
+      "gaussian_blur",
+      "gaussian_noise",
+      "jpeg_compression",
+      "boundary_blur",
+      "boundary_erase",
+      "foreground_blur",
+      "foreground_occlusion",
+      "background_removal",
+      "rand_augment"
+    ],
+    "levels": [
+      1,
+      2,
+      3
+    ],
+    "data_root": "data/imagenette2-320",
+    "seed": 42,
+    "deciders": [
+      "jev"
+    ],
+    "evidence_mode": "stats",
+    "include_detector": false,
+    "include_candidates": false,
+    "exemplars": 0,
+    "max_calls": 500,
+    "max_cost": 0.5,
+    "workers": 4,
+    "fit_severity_per_class": 10,
+    "conformal": null,
+    "out": "results/deciders/jev_stats",
+    "limit": 120,
+    "rf_detector": "/Users/sachin/Desktop/Uni Courses/CSE 598 - Deep Learning/course_project_actual/CSE_598_ODL_project/results/detector/detector.joblib",
+    "severity_model": "/Users/sachin/Desktop/Uni Courses/CSE 598 - Deep Learning/course_project_actual/CSE_598_ODL_project/results/deciders/severity.joblib",
+    "hf_model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "deciders_resolved": [
+      {
+        "name": "jev",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "typesafe/jev-1.14",
+        "taxonomy": "family",
+        "evidence_mode": "stats"
+      }
+    ]
+  },
+  "n_rows": 120,
+  "n_samples": 120,
+  "total_cost": 0.005049702,
+  "cached_rate": 0.0,
+  "parse_failure_rate": 0.0,
+  "per_decider": [
+    {
+      "decider": "jev",
+      "n": 120,
+      "degraded_accuracy": 0.058333333333333334,
+      "degraded_recall": 0.03418803418803419,
+      "clean_false_alarm_rate": 0.0,
+      "condition_accuracy": 0.03333333333333333,
+      "condition_macro_f1": 0.011929824561403509,
+      "severity_exact": 0.3504273504273504,
+      "severity_within1": 0.8376068376068376,
+      "severity_mae": 0.811965811965812,
+      "parse_failure_rate": 0.0,
+      "latency_p50_ms": 211.8838335154578,
+      "latency_p95_ms": 327.8346187260467,
+      "cached_rate": 0.0,
+      "total_cost": 0.005049702
+    }
+  ],
+  "skipped": [],
+  "stopped": null,
+  "hosted_calls": 120
+}
