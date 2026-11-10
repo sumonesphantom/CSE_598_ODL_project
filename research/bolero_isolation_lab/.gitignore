@@ -1,0 +1,29 @@
+﻿# Local datasets
+data/
+datasets/
+imagenette2-160/
+
+# Generated results
+outputs/*
+!outputs/README.md
+
+# Ground-truth masks
+annotations/ground_truth_masks/
+annotations/*.png
+annotations/*.jpg
+annotations/*.jpeg
+
+# Model weights
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+
+# Python environment and temporary files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.env
