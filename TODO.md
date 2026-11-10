@@ -57,12 +57,17 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
 - [x] Add `scripts/run_structure_compare.py` (depth vs SAM vs DETR outline, per-class breakdown)
 - [x] Add ImageNet-C style CE / mCE (`benchmark.py`, `scripts/benchmark.py`)
 - [ ] Run `run_structure_compare.py --per-class 20` and check whether SAM fixes the church failure case
-- [ ] Run `run_diagnostic.py` for `vit_b16` and `convnext_t`, then report mCE vs ResNet-50
+- [ ] Run `run_diagnostic.py` for `vit_b16` and `convnext_t`, then report mCE vs ResNet-50 (~35–45 min + ~25–30 min on MPS):
+      `python scripts/run_diagnostic.py --backbone vit_b16 --out results/diagnostic_vit_b16`, then
+      `python scripts/benchmark.py --model results/diagnostic_vit_b16 --out results/benchmark_vit_b16` (same for `convnext_t`)
 - [ ] Wire the best structure source into `run_restoration.py` as an option
 - [ ] Add a detection eval harness on Aravind's loaders: frozen DETR + a YOLO baseline, mAP50 / mAP50-95 per weather condition
-- [ ] Add `src/bolero/conformal.py`: split-conformal threshold for the perturbation gate (target clean false-alarm rate, e.g. ≤5%) replacing the fixed 0.6 in `detection.py`
-- [ ] Add APS / RAPS prediction sets for the classifier; report coverage and set size per perturbation, before and after restoration
-- [ ] Abstain-and-alert: when the conformal set is too large or the condition detector fires, flag "camera unreliable" instead of reporting a confident miss. Report the person miss rate at a fixed alert budget
+- [x] Add `src/bolero/conformal.py`: split-conformal threshold for the perturbation gate (target clean false-alarm rate, e.g. ≤5%) replacing the fixed 0.6 in `detection.py`. `ConformalGate` is a drop-in for the detector; use it in Stage 3 with `run_restoration.py --conformal-gate results/conformal/headline.json`
+- [x] Add APS / RAPS prediction sets for the classifier (`ConformalClassifier`, `FrozenClassifier.predict_proba`)
+- [x] Abstain-and-alert logic: `alerts()` (set too large or gate fired), `selective_report()` (alert rate, silent miss rate), `max_size_for_budget()`. Person miss rate waits on the detection harness
+- [x] `scripts/run_conformal.py` + `tests/test_conformal.py` (7 tests, full suite passes)
+- [ ] Run it (~10 min on MPS): `python scripts/run_conformal.py --per-class 20 --cal-per-class 50`. Check in `headline.json`: conformal vs fixed-0.6 clean false-alarm rate, clean coverage ≈ 0.9, how much coverage drops / set size grows under perturbation, and whether `detector` / `oracle` restoration recovers it
+- [ ] Then rerun Stage 3 with the conformal gate and compare `detector_classical` against the fixed-threshold run
 
 ## Rohith: Benchmarking lead + learned / generative restoration
 - [ ] Pick the reference benchmark protocol (ImageNet-C / Imagenette-C severities) and document how ours maps to it

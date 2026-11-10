@@ -6,6 +6,7 @@ the perturbed input is passed through each restoration method and re-classified:
   none                   the perturbed image as-is (reference)
   oracle_classical       the classical plan for the *true* perturbation (upper bound)
   detector_classical     the plan for the *detected* perturbation; pass-through if unsure
+                         (fixed 0.6 threshold, or the conformal gate with --conformal-gate)
   baseline:<name>        a depth-free preprocessing baseline, applied blindly
   cue:<name>             one depth-derived contextual cue (see depth_source)
   detector+cue:<name>    detector_classical followed by the cue (perturbed depth)
@@ -42,6 +43,7 @@ import _bootstrap  # noqa: F401
 from bolero.baselines import BASELINES, apply_baseline
 from bolero.classifier import BatchPredictor, FrozenClassifier
 from bolero.config import RESULTS_DIR, SEED
+from bolero.conformal import ConformalGate
 from bolero.cues import CUES, apply_cue
 from bolero.data import list_images, load_image
 from bolero.depth import DepthCache, DepthEstimator, rank_agreement, resize_depth
@@ -74,6 +76,8 @@ def main() -> None:
     parser.add_argument("--depth-sources", nargs="*", default=DEPTH_SOURCES, choices=DEPTH_SOURCES)
     parser.add_argument("--strengths", type=Path, default=RESULTS_DIR / "tuning" / "strengths.json")
     parser.add_argument("--detector", type=Path, default=RESULTS_DIR / "detector" / "detector.joblib")
+    parser.add_argument("--conformal-gate", type=Path, default=None,
+                        help="headline.json from scripts/run_conformal.py; replaces the fixed threshold")
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--device", default=None)
     parser.add_argument("--backbone", default="resnet50",
@@ -88,6 +92,9 @@ def main() -> None:
         raise SystemExit("--combo-cues needs the 'perturbed' depth source.")
     strengths, strength_status = load_strengths(args.strengths)
     detector = PerturbationDetector.load(args.detector)
+    if args.conformal_gate:
+        gate = json.loads(args.conformal_gate.read_text())["gate"]
+        detector = ConformalGate(detector, gate["threshold_on_1_minus_p_clean"], gate["alpha"])
     classifier = FrozenClassifier(args.backbone, device=args.device)
     estimator = DepthEstimator(device=args.device)
     depth_cache = DepthCache(estimator)
