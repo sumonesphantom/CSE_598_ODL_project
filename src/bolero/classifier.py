@@ -66,6 +66,13 @@ class FrozenClassifier:
             topk_prob=topk_prob.cpu().numpy(),
         )
 
+    @torch.no_grad()
+    def predict_proba(self, images: list[np.ndarray]) -> np.ndarray:
+        """(N, 1000) softmax probabilities, for conformal prediction sets."""
+        inputs = self.processor(images=[to_pil(im) for im in images], return_tensors="pt")
+        logits = self.model(pixel_values=inputs["pixel_values"].to(self.device)).logits
+        return torch.softmax(logits.float(), dim=-1).cpu().numpy()
+
     def candidates(self, preds: Predictions, i: int) -> list[tuple[str, float]]:
         """Probability-weighted class candidates for image i, e.g. [("golf ball", 0.707), ...]."""
         return [(self.id2label[int(c)], float(p)) for c, p in zip(preds.topk_index[i], preds.topk_prob[i])]
