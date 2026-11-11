@@ -78,30 +78,58 @@ class ConformalGate:
 # 2. APS / RAPS prediction sets (Romano et al. 2020; Angelopoulos et al. 2021)
 # ---------------------------------------------------------------------------
 
+def restrict_to_classes(probs: np.ndarray, class_index, labels: np.ndarray | None = None):
+    """Keep only the columns in `class_index` and renormalize each row to sum to 1.
+
+    With 1000 ImageNet classes and a frozen classifier whose clean error rate exceeds
+    alpha, APS must absorb almost the whole softmax tail to reach the true class, so
+    qhat ~ 1 and sets are near-trivial. Building sets over the task's own label space
+    (the 10 Imagenette classes) avoids that. If `labels` (ImageNet indices) are given,
+    also returns them remapped to positions 0..len(class_index)-1.
+    """
+    class_index = np.asarray(class_index)
+    sub = np.asarray(probs, dtype=np.float64)[:, class_index]
+    sub = sub / sub.sum(axis=1, keepdims=True)
+    if labels is None:
+        return sub
+    position = {int(c): i for i, c in enumerate(class_index)}
+    return sub, np.array([position[int(l)] for l in labels])
+
+
 def _penalty(n_classes: int, lam: float, k_reg: int) -> np.ndarray:
     """RAPS rank penalty: lam for every rank beyond the first k_reg (cumulated)."""
     return lam * np.clip(np.arange(1, n_classes + 1) - k_reg, 0, None)
 
 
-def raps_scores(probs: np.ndarray, labels: np.ndarray, lam: float = 0.0, k_reg: int = 0) -> np.ndarray:
-    """Nonconformity of the true label: probability mass ranked at or above it, plus the rank penalty.
+def _sorted_scores(probs: np.ndarray, lam: float, k_reg: int, rng: np.random.Generator | None):
+    """Per-rank scores: mass ranked at or above each class, plus the rank penalty.
 
-    lam = 0 gives plain (non-randomized) APS.
+    With `rng`, each row subtracts U * p(class), U ~ Uniform(0, 1) (randomized APS,
+    Romano et al. 2020). Without it, a sharp model's confidently *correct* prediction
+    already scores ~1.0, so qhat lands on 1.0 and floating-point ties at 1.0 put
+    almost every class in the set.
     """
     probs = np.asarray(probs, dtype=np.float64)
     order = np.argsort(-probs, axis=1)
     sorted_p = np.take_along_axis(probs, order, axis=1)
     cum = np.cumsum(sorted_p, axis=1) + _penalty(probs.shape[1], lam, k_reg)
+    if rng is not None:
+        cum = cum - rng.uniform(size=(len(probs), 1)) * sorted_p
+    return order, cum
+
+
+def raps_scores(probs: np.ndarray, labels: np.ndarray, lam: float = 0.0, k_reg: int = 0,
+                rng: np.random.Generator | None = None) -> np.ndarray:
+    """Nonconformity of the true label. lam = 0 gives APS; pass `rng` for the randomized version."""
+    order, cum = _sorted_scores(probs, lam, k_reg, rng)
     rank = np.argmax(order == np.asarray(labels)[:, None], axis=1)
-    return cum[np.arange(len(probs)), rank]
+    return cum[np.arange(len(order)), rank]
 
 
-def raps_sets(probs: np.ndarray, qhat: float, lam: float = 0.0, k_reg: int = 0) -> np.ndarray:
+def raps_sets(probs: np.ndarray, qhat: float, lam: float = 0.0, k_reg: int = 0,
+              rng: np.random.Generator | None = None) -> np.ndarray:
     """Boolean (N, C) set membership: every class whose score is <= qhat (never empty)."""
-    probs = np.asarray(probs, dtype=np.float64)
-    order = np.argsort(-probs, axis=1)
-    sorted_p = np.take_along_axis(probs, order, axis=1)
-    cum = np.cumsum(sorted_p, axis=1) + _penalty(probs.shape[1], lam, k_reg)
+    order, cum = _sorted_scores(probs, lam, k_reg, rng)
     keep_sorted = cum <= qhat
     keep_sorted[:, 0] = True
     sets = np.zeros_like(keep_sorted)
@@ -117,14 +145,17 @@ class ConformalClassifier:
     alpha: float
     lam: float = 0.0
     k_reg: int = 0
+    rng: np.random.Generator | None = None   # set => randomized scores and sets
 
     @classmethod
-    def calibrate(cls, probs: np.ndarray, labels: np.ndarray, alpha: float,
-                  lam: float = 0.0, k_reg: int = 0) -> "ConformalClassifier":
-        return cls(conformal_quantile(raps_scores(probs, labels, lam, k_reg), alpha), alpha, lam, k_reg)
+    def calibrate(cls, probs: np.ndarray, labels: np.ndarray, alpha: float, lam: float = 0.0,
+                  k_reg: int = 0, randomized: bool = True, seed: int = 0) -> "ConformalClassifier":
+        rng = np.random.default_rng(seed) if randomized else None
+        qhat = conformal_quantile(raps_scores(probs, labels, lam, k_reg, rng), alpha)
+        return cls(qhat, alpha, lam, k_reg, rng)
 
     def sets(self, probs: np.ndarray) -> np.ndarray:
-        return raps_sets(probs, self.qhat, self.lam, self.k_reg)
+        return raps_sets(probs, self.qhat, self.lam, self.k_reg, self.rng)
 
 
 def set_metrics(sets: np.ndarray, labels: np.ndarray) -> dict:
