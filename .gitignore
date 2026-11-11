@@ -6,6 +6,9 @@
 # Internal reference paper (do not share)
 Instructional_training*.pdf
 
+# Submitted proposal (do not share)
+CSE598_Group12_ProjectProposal*.pdf
+
 # Word documents (proposal drafts) and Word lock files
 *.docx
 ~$*
