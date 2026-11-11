@@ -66,3 +66,57 @@ def test_rand_augment_varies_across_images_and_leaves_torch_rng_alone(image):
     assert torch.equal(torch.rand(1), expected)
     assert sum(np.any(o != outs[0]) for o in outs[1:]) > 0
     assert sum(np.mean((o - image) ** 2) > 1e-4 for o in outs) >= 4
+
+
+# ---- Physics-based weather ---------------------------------------------------
+
+def _scene(seed=0, size=64):
+    rng = np.random.default_rng(seed)
+    img = rng.uniform(0.1, 0.9, size=(size, size, 3)).astype(np.float32)
+    depth = np.tile(np.linspace(0.0, 1.0, size, dtype=np.float32)[:, None], (1, size))  # bottom rows near
+    return img, depth
+
+
+def test_weather_is_opt_in_and_valid():
+    from bolero.perturbations import ALL_PERTURBATIONS, ANY_PERTURBATION, WEATHER, rng_for
+    assert set(WEATHER).isdisjoint(ALL_PERTURBATIONS)
+    assert set(WEATHER) <= set(ANY_PERTURBATION)
+    img, depth = _scene()
+    for name, p in WEATHER.items():
+        diffs = []
+        for level in (1, 2, 3):
+            a = p(img, level, depth, rng_for("im", name, level, 0))
+            b = p(img, level, depth, rng_for("im", name, level, 0))
+            assert a.shape == img.shape and a.dtype == np.float32
+            assert 0.0 <= a.min() and a.max() <= 1.0
+            np.testing.assert_array_equal(a, b)  # deterministic per (image, name, level)
+            diffs.append(float(np.abs(a - img).mean()))
+        assert diffs[0] > 0.005, name
+        assert diffs[2] > diffs[0], name   # stronger at higher severity
+
+
+def test_scattering_hazes_far_more_than_near():
+    from bolero.perturbations import WEATHER
+    img, depth = _scene()
+    for name in ("rain_mist", "dust_haze"):
+        out = WEATHER[name](img, 2, depth)
+        far_change = np.abs(out[:8] - img[:8]).mean()     # depth ~ 0: far
+        near_change = np.abs(out[-8:] - img[-8:]).mean()  # depth ~ 1: near
+        assert far_change > near_change, name
+
+
+def test_dust_fades_blue_first_and_tints_yellow():
+    from bolero.perturbations import WEATHER
+    img, depth = _scene()
+    out = WEATHER["dust_haze"](img, 3, depth)
+    mean = out.reshape(-1, 3).mean(0)
+    assert mean[0] > mean[2] and mean[1] > mean[2]     # yellow-brown cast
+    contrast = out.reshape(-1, 3).std(0) / img.reshape(-1, 3).std(0)
+    assert contrast[2] < contrast[0]                    # blue loses contrast first
+
+
+def test_weather_maps_onto_weather_taxonomy():
+    from bolero.conditions import condition_label
+    from bolero.perturbations import WEATHER
+    for name, p in WEATHER.items():
+        assert condition_label(name, p.family, "weather") == p.family

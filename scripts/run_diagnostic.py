@@ -24,7 +24,7 @@ from bolero.config import RESULTS_DIR, SEED
 from bolero.data import list_images, load_image
 from bolero.depth import DepthCache
 from bolero.metrics import compare, psnr, ssim
-from bolero.perturbations import ALL_PERTURBATIONS, HELD_OUT, LEVELS, rng_for
+from bolero.perturbations import ALL_PERTURBATIONS, ANY_PERTURBATION, HELD_OUT, LEVELS, rng_for
 from bolero.records import prefixed, save
 
 KEYS = ["image_id", "wnid", "class_name", "label_index"]
@@ -34,7 +34,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--per-class", type=int, default=None, help="images per class (default: all 3,925)")
     parser.add_argument("--perturbations", nargs="*", default=list(ALL_PERTURBATIONS),
-                        choices=list(ALL_PERTURBATIONS))
+                        choices=list(ANY_PERTURBATION),
+                        help="default: the 14 + held-out suite; weather (rain_*, dust_*) is opt-in")
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--device", default=None)
     parser.add_argument("--backbone", default="resnet50",
@@ -57,7 +58,7 @@ def main() -> None:
                 "class_name": record.class_name, "label_index": record.label_index}
         clean.add(meta, image)
         for name in args.perturbations:
-            perturbation = ALL_PERTURBATIONS[name]
+            perturbation = ANY_PERTURBATION[name]
             for level in LEVELS:
                 t0 = time.perf_counter()
                 out = perturbation(image, level, depth, rng_for(record.image_id, name, level, args.seed))

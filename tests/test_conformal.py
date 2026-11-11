@@ -125,3 +125,11 @@ def test_randomized_aps_avoids_trivial_sets_on_sharp_model():
         assert m["coverage"] >= 1 - alpha - 0.02
         sizes[randomized] = m["mean_set_size"]
     assert sizes[True] < sizes[False] - 0.5
+
+
+def test_restore_skip_passes_through():
+    from bolero.restoration import restore
+    rng = np.random.default_rng(3)
+    x = rng.uniform(size=(32, 32, 3)).astype(np.float32)
+    np.testing.assert_array_equal(restore(x, "gaussian_noise", frozenset({"gaussian_noise"})), x)
+    assert not np.array_equal(restore(x, "gaussian_noise"), x)
