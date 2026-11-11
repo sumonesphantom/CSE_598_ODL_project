@@ -106,8 +106,19 @@ PLANS: dict[str, list[Op]] = {
 }
 
 
-def restore(image: np.ndarray, perturbation: str) -> np.ndarray:
+def load_skip_plans(path) -> frozenset[str]:
+    """Perturbations whose plan should pass through, from scripts/audit_plans.py (or none)."""
+    if path is None:
+        return frozenset()
+    import json
+    from pathlib import Path
+    return frozenset(json.loads(Path(path).read_text())["skip"])
+
+
+def restore(image: np.ndarray, perturbation: str, skip: frozenset[str] = frozenset()) -> np.ndarray:
+    """Apply the plan for `perturbation`; pass through when it is listed in `skip`
+    (plans the audit found to lower accuracy even when the perturbation is known)."""
     out = image
-    for op in PLANS[perturbation]:
+    for op in [] if perturbation in skip else PLANS[perturbation]:
         out = op(out)
     return np.clip(out, 0.0, 1.0).astype(np.float32)

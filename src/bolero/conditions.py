@@ -23,7 +23,7 @@ import numpy as np
 
 from .config import SEED
 from .data import ImageRecord, load_image
-from .perturbations import ALL_PERTURBATIONS, LEVELS, rng_for
+from .perturbations import ALL_PERTURBATIONS, ANY_PERTURBATION, LEVELS, rng_for
 
 TAXONOMIES: dict[str, dict[str, str]] = {
     "family": {
@@ -96,7 +96,7 @@ def iter_samples(
     """
     names = list(ALL_PERTURBATIONS if perturbations is None else perturbations)
     for name in names:
-        if name not in ALL_PERTURBATIONS:
+        if name not in ANY_PERTURBATION:
             raise ValueError(f"unknown perturbation {name!r}")
     counts: Counter[tuple[str, int | None]] = Counter()
 
@@ -121,7 +121,7 @@ def iter_samples(
             )
         depth = None
         for name in names:
-            perturbation = ALL_PERTURBATIONS[name]
+            perturbation = ANY_PERTURBATION[name]
             if perturbation.needs_depth:
                 if depth_for is None:
                     raise ValueError(f"{name} needs a depth map; pass depth_for")

@@ -61,7 +61,7 @@ from bolero.deciders import (
 from bolero.depth import DepthCache
 from bolero.detection import PerturbationDetector, extract_features
 from bolero.openrouter import BudgetExceeded, CostGuard, DecisionsClient
-from bolero.perturbations import ALL_PERTURBATIONS, LEVELS
+from bolero.perturbations import ALL_PERTURBATIONS, ANY_PERTURBATION, LEVELS
 from bolero.prompting import SceneEvidence, image_statistics
 from bolero.records import save
 
@@ -765,7 +765,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--taxonomy", choices=sorted(TAXONOMIES), default="family")
     parser.add_argument(
         "--perturbations", nargs="*", default=list(ALL_PERTURBATIONS),
-        choices=list(ALL_PERTURBATIONS),
+        choices=list(ANY_PERTURBATION),
     )
     parser.add_argument("--levels", nargs="*", type=int, default=list(LEVELS))
     parser.add_argument("--data-root", type=Path, default=None)

@@ -26,6 +26,10 @@ data/imagenette2-160.tgz
 data/imagenette2-320/
 data/imagenette2-320.tgz
 data/cache/
+data/dawn/
+data/xwod/
+data/sdsi/
+data/virada/
 
 # Large pipeline outputs (summaries, figures and SUMMARY.md stay tracked)
 results/*/records.csv.gz

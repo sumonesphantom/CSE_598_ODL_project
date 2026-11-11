@@ -56,12 +56,26 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
 - [x] Add SAM / DETR spatial evidence (`segmentation.py`) usable by every existing cue
 - [x] Add `scripts/run_structure_compare.py` (depth vs SAM vs DETR outline, per-class breakdown)
 - [x] Add ImageNet-C style CE / mCE (`benchmark.py`, `scripts/benchmark.py`)
-- [ ] Run `run_structure_compare.py --per-class 20` and check whether SAM fixes the church failure case
-- [ ] Run `run_diagnostic.py` for `vit_b16` and `convnext_t`, then report mCE vs ResNet-50 (~35–45 min + ~25–30 min on MPS):
-      `python scripts/run_diagnostic.py --backbone vit_b16 --out results/diagnostic_vit_b16`, then
-      `python scripts/benchmark.py --model results/diagnostic_vit_b16 --out results/benchmark_vit_b16` (same for `convnext_t`)
-- [ ] Wire the best structure source into `run_restoration.py` as an option
-- [ ] Add a detection eval harness on Aravind's loaders: frozen DETR + a YOLO baseline, mAP50 / mAP50-95 per weather condition
+- Structure compare (SAM fixes the church case?) moved to Sachin's list (2026-11-11): SAM runs on CPU at ~9 s/image, so the full run is hours long
+- [x] Backbone mCE vs ResNet-50, full val (3,925 images; `results/diagnostic_{vit_b16,convnext_t}/`, `results/benchmark_*/`, 2026-11-11):
+      | Backbone | Clean acc | Perturbed acc | mCE | Relative mCE |
+      |---|---|---|---|---|
+      | ResNet-50 | 0.794 | 0.648 | 1.00 | 1.00 |
+      | ViT-B/16 | 0.831 | 0.669 | 1.03 | 3.01 |
+      | ConvNeXt-T | 0.835 | 0.719 | **0.79** | **0.72** |
+      - ConvNeXt-T beats ResNet-50 on 13/14 perturbations (grayscale even); biggest gains on low_contrast / brighten / darken
+      - ViT-B/16 is much better on texture damage (noise CE 0.58, blur 0.69, jpeg 0.71) but much worse on color / lighting (inversion CE 2.74, error 0.24 → 0.65; low_contrast 1.27, brighten 1.21, darken 1.18), so overall mCE is slightly worse despite higher clean accuracy
+- [x] Wire a structure source into `run_restoration.py`: `--structure-source depth|sam|detr` (default depth; sam/detr need `--depth-sources perturbed`). Picking the default waits on Sachin's structure-compare run
+- [x] Detection eval harness (`src/bolero/detection_eval.py`: frozen DETR + COCO-style mAP, 5 tests; `scripts/run_detection.py`). DAWN results, frozen COCO DETR (`results/detection/`):
+      | Condition | Method | mAP50 | mAP50-95 | Person recall |
+      |---|---|---|---|---|
+      | Rain (200 img, 1,588 boxes) | none | **0.481** | **0.314** | 0.89 |
+      | | autocontrast / clahe / unsharp | 0.480 / 0.471 / 0.462 | 0.297 / 0.294 / 0.284 | 0.93 / 0.89 / 0.93 |
+      | Dust (323 img, 2,235 boxes) | none | **0.457** | **0.287** | 0.84 |
+      | | autocontrast / clahe / unsharp | 0.381 / 0.376 / 0.375 | 0.235 / 0.229 / 0.230 | 0.78 / 0.76 / 0.77 |
+      - No preprocessing helps; under dust every baseline costs ~8 pp mAP50 and 6–8 pp person recall (same direction as Li et al. CVPR 2019). Trucks / buses are the weak classes (AP50 0.26–0.40 under dust)
+- [ ] YOLO baseline for the detection harness (`ultralytics` not installed; add it to requirements and a `YOLODetector` next to `FrozenDetector`)
+- [ ] Person miss rate at a fixed alert budget on DAWN (abstain-and-alert for detection, now that the harness exists)
 - [x] Add `src/bolero/conformal.py`: split-conformal threshold for the perturbation gate (target clean false-alarm rate, e.g. ≤5%) replacing the fixed 0.6 in `detection.py`. `ConformalGate` is a drop-in for the detector; use it in Stage 3 with `run_restoration.py --conformal-gate results/conformal/headline.json`
 - [x] Add APS / RAPS prediction sets for the classifier (`ConformalClassifier`, `FrozenClassifier.predict_proba`)
 - [x] Abstain-and-alert logic: `alerts()` (set too large or gate fired), `selective_report()` (alert rate, silent miss rate), `max_size_for_budget()`. Person miss rate waits on the detection harness
@@ -79,7 +93,12 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
       - Mean Δacc over perturbed conditions: conformal −2.9 pp vs fixed −2.6 pp (fix rate 6.4% vs 5.2%, break rate 8.0% vs 6.9%). Clean: 0.80 → 0.80 vs 0.81
       - The gate routes more images, but routing more just applies the classical plans more often, and those plans hurt on average: gaussian_noise L3 −32 pp, background_removal L3 −20, foreground_occlusion L2 −11 (conformal) vs −4 (fixed). Gains only on gaussian_blur (+6–8) and brighten/jpeg L3 (+4)
       - **Takeaway:** the gate is better at detection; the bottleneck is the restoration plans. Fix or drop the noise / background_removal / occlusion plans (or pass through for them) before gating matters
-- [ ] Restoration plan audit: for each perturbation where `oracle_classical` Δacc < 0, pass through instead of restoring, then rerun the comparison
+- [x] Restoration plan audit (`scripts/audit_plans.py`, decided on 100 **train** images disjoint from detector training → `results/restoration_audit/skip_plans.json`):
+      - Pass through: background_removal (−14.7 pp), gaussian_noise (−17.3), foreground_occlusion (−9.0), region_removal (−6.3), boundary_erase (−2.7), foreground_blur (−1.3), low_contrast (−1.3)
+      - Keep: gaussian_blur (+6.0), jpeg_compression (+2.3), boundary_blur (+1.0), brighten (+1.0), darken (+0.3), inversion (0.0)
+      - `run_restoration.py --skip-plans results/restoration_audit/skip_plans.json` (detector path only; `oracle_classical` keeps every plan)
+      - Stage 3, same 100 val images: fixed −2.56 → **+0.69 pp** (break rate 6.9% → 0.4%); conformal −2.93 → **+0.60 pp** (8.0% → 0.7%). Restoration now beats doing nothing; with the skip list the two gates are equal within noise, so the conformal gate's value is its false-alarm guarantee
+      - Overlaps with the unmerged `origin/Trial_2` branch (`scripts/tune_plans.py`), which tries several candidate plans per perturbation and reached the same conclusion. Decide with the team which to keep; Trial_2 is the more complete version
 - [ ] Note: the system Python 3.10 (`/Library/Frameworks/Python.framework/Versions/3.10/bin/python3`) has the deps; Anaconda's `python` lacks `transformers` / `cv2`
 
 ## Rohith: Benchmarking lead + learned / generative restoration
@@ -94,10 +113,11 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
 - [ ] Write a one-page "how we benchmark" note for the team
 
 ## Aravind: Rain + dust data (physics, generative, real)
-- [ ] Download XWOD + DAWN and confirm license terms before any results go in the report
-- [ ] Write loaders for XWOD and DAWN (rain + sand/dust subsets only) and for SDSI / VIRADA (condition labels)
-- [ ] Add physics-based synthetic rain to `perturbations.py`: streaks, rain + mist using depth (I·t + A·(1−t), t = e^(−β·d)), and lens raindrops
-- [ ] Add physics-based dust: the same scattering model with a yellow-brown airlight A and wavelength-dependent β (blue fades first), plus contrast loss
+- [x] DAWN downloaded (done by Venkat, 2026-11-11): Rain (200 images) + Sand (323) from Mendeley 10.17632/766ygrbt8y.3 into `data/dawn/` (git-ignored). License per Mendeley metadata: **CC BY-NC 3.0** (attribute, non-commercial; fine for coursework, cite the DAWN paper)
+- [ ] XWOD: needs a Kaggle API key (`~/.kaggle/kaggle.json`), then `kaggle datasets download kuantinglai/exwod` into `data/xwod/`. Confirm its research-use license, and check the loader against the real layout
+- [x] Loaders (`src/bolero/weather_data.py`, tested): `load_dawn()` (VOC XML; Sand → `dust`), `load_xwod()` / `load_yolo_dataset()` (Ultralytics YOLO layout, assumed until XWOD is downloaded), `load_condition_folders()` for SDSI / VIRADA (one folder per label). SDSI / VIRADA themselves are not downloaded yet
+- [x] Physics-based weather in `perturbations.py` (`WEATHER`, opt-in; not in `ALL_PERTURBATIONS`, so earlier results and the trained detector are unchanged): `rain_streaks`, `rain_mist` (depth haze I·t + A·(1−t), t = e^(−β·d), plus streaks), `rain_lens` (refracting, defocused drops), `dust_haze` (yellow-brown airlight, β per channel R 0.8 / G 1.0 / B 1.35 so blue fades first, plus contrast loss), `dust_storm` (dense haze + wind-blown sand). Names map onto the `weather` taxonomy; usable via `--perturbations` in `run_diagnostic.py` / `run_decider_compare.py` and `conditions.iter_samples`. 4 tests
+- [ ] Measure the classifier drop on the weather set: `python scripts/run_diagnostic.py --perturbations rain_streaks rain_mist rain_lens dust_haze dust_storm --per-class 20 --out results/diagnostic_weather`
 - [ ] Generative degradation: heavy rain / dust storm versions of clean images (InstructPix2Pix or SDXL img2img). Control severity with edit strength. Keep an image only if the label survives (clean-image prediction / CLIP similarity / DETR boxes still match)
 - [ ] Compare physics-based, generative and real (XWOD/DAWN) degradation on the same detector. Which synthetic one predicts real-data performance best?
 - [ ] Retrain the RF condition detector on SDSI / VIRADA so it recognizes real rain and dust
@@ -107,11 +127,23 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
 - [x] Serialize `SceneEvidence` (`prompting.py`) for the deciders: `noul` "is the view degraded?", `choice` condition, `score` severity 1–3 (`conditions.py`, `build_jev_questions`)
 - [x] Compare deciders on the OpenRouter Decisions API: RF vs Jev 1.14 vs Clef Flash vs Perplexity Decider Flash vs Liquid d1 vs Joey 1, plus a local Qwen prompt-and-parse adapter. Laya and poorjev were dropped as install-risk alternatives and documented. Metrics: routing accuracy, clean false alarms, severity MAE, latency, cost (`scripts/run_decider_compare.py`)
 - [x] Probe image resolution limits: Jev needs >=280 px; Imagenette2-320 is the common input (`scripts/probe_resolutions.py`)
-- [ ] Recalibrate each decider with Venkat's conformal gate before gating on it. `results/deciders/main/scores.csv` is ready; a split-half threshold sweep is in the README, but the real split-conformal threshold waits on `conformal.py`
+- [x] Recalibrate each decider with Venkat's conformal gate (done by Venkat, 2026-11-11): `python scripts/calibrate_deciders.py` → `results/deciders/conformal/` (`thresholds_alpha{0.05,0.1,0.2}.json` work with `run_decider_compare.py --conformal`). Calibrated on the 20 clean images; recall on the 540 degraded ones; leave-one-out clean false alarm = alpha
+      | Decider | Native FA / recall | Recall at α = 0.05 | Recall at α = 0.10 |
+      |---|---|---|---|
+      | RF | 0.10 / 0.70 | **0.735** | **0.837** |
+      | Jev | 0.20 / 0.92 | 0.533 | 0.667 |
+      | joey-1 | 0.00 / 0.46 | 0.533 | 0.667 |
+      | pplx-decider-flash | 0.05 / 0.52 | 0.469 | 0.644 |
+      | d1 | 0.10 / 0.61 | 0.446 | 0.583 |
+      | clef-flash | 0.05 / 0.60 | 0.288 | 0.612 |
+      - At a matched clean false-alarm rate the local RF beats every hosted decider; Jev's 0.92 recall came from a loose threshold. Only 20 clean images, so α < 1/21 is unreachable; use a larger clean sample for the final numbers
 - [x] Choose a VLM (Qwen2.5-VL-3B) and compare image only vs image + evidence, with text, overlay, depth-image and field ablations (`scripts/run_vlm_eval.py`)
 - [x] Define the VLM scoring: entity match, damage match (only when it overlaps the entity), geometric relation with a VLM fallback, and label utility (`vlm_scoring.py`)
 - [x] Build the 30-case human review packet and agreement/kappa scorer (`scripts/make_vlm_review.py`); run it on the final VLM predictions
 - [ ] Rerun the decider comparison on the `weather` taxonomy once Aravind's physics rain/dust perturbations land; retrain the RF on those classes
+- [ ] Run the structure compare (moved from Venkat): does a SAM or DETR outline fix the church failure case that the depth outline misses? SAM runs on CPU (~9 s/image), so use the short version (~1¾ h on MPS):
+      `python scripts/run_structure_compare.py --per-class 10 --perturbations gaussian_blur foreground_blur --out results/structure`
+      Full version (~4 h at `--per-class 10` with all 5 default perturbations, ~8 h at `--per-class 20`): drop `--perturbations`. Then check `results/structure/per_class.csv` for `church`, and if SAM/DETR wins, rerun Stage 3 with `--structure-source sam` (or `detr`) `--depth-sources perturbed`
 
 ## Kushi: Literature, failure analysis + attacks
 - [ ] Summarize the professor's papers (incl. Aditya's DARPA/ECML paper): method, dataset, metric, what we can reuse
