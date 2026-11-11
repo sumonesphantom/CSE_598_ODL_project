@@ -231,6 +231,33 @@ clean depth (`depth_rank_corr`). Rank correlation suits relative depth, which ha
 no fixed scale or offset. `analyze.py` bins it into quartiles to test whether
 restoration failures coincide with unreliable depth.
 
+### Structure source swap: depth vs SAM vs DETR
+
+The depth outline helped foreground entities but missed flat, background-like
+ones (churches). This study holds the cues fixed and swaps only the structure
+map: depth, a SAM entity mask, or DETR boxes. All structure is estimated on the
+perturbed input, which is the deployable setting.
+
+Setup: 100 val images (10 per class), `gaussian_blur` and `foreground_blur` at
+levels 1-3 plus clean, both default cues, frozen ResNet-50. Deltas are paired
+against the no-cue prediction on the same image and condition; intervals are
+95% bootstrap over images.
+
+| Source | Structure time | Delta acc, boundary cue | Delta acc, separation cue | Fix / break (boundary) |
+|---|---|---|---|---|
+| depth | 49 ms | -0.71 pp [-2.71, +1.29] | -0.43 pp [-1.71, +0.71] | 17 / 22 |
+| SAM | 4.7 s | -0.43 pp [-2.43, +1.71] | -1.29 pp [-2.86, +0.14] | 17 / 20 |
+| DETR | 190 ms | -3.14 pp [-5.29, -1.29] | -1.14 pp [-2.71, +0.14] | 7 / 29 |
+
+No source beats depth. The only interval that excludes zero is DETR's, and it is
+negative: it breaks 29 predictions while fixing 7. SAM is neutral but about 95x
+slower than depth. On the church class specifically, SAM is +1.4 pp (one extra
+correct out of 70, CI [-7.1, +10.0]), depth -1.4 pp, DETR 0.0. The church
+failure is not a structure-source problem: the frozen ResNet-50 gets 30.8% clean
+accuracy on church over the full val set (30% on the 10 sampled here), so no
+spatial cue can recover an entity the classifier cannot recognize. Keep depth as
+the default; the SAM/DETR Stage 3 rerun is not warranted.
+
 ### Classical restoration plans
 
 Defined in [`src/bolero/restoration.py`](src/bolero/restoration.py). There is one plan per perturbation:
