@@ -34,7 +34,7 @@ class FrozenDetector:
         from transformers import pipeline
 
         self.min_score = min_score
-        self.pipe = pipeline("object-detection", model=SEGMENTERS.get(model, model), revision="no_timm",
+        self.pipe = pipeline("object-detection", model=SEGMENTERS.get(model, model),
                              framework="pt", device=get_device(device))
 
     def __call__(self, image) -> Detections:

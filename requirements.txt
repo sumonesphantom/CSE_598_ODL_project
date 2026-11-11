@@ -2,6 +2,7 @@
 torch>=2.2
 torchvision>=0.17   # JPEG encode/decode in perturbations
 transformers>=4.45    # Depth-Anything-V2 support
+timm>=1.0             # DETR backbone (facebook/detr-resnet-50)
 numpy>=1.26
 pandas>=2.2
 scipy>=1.11
