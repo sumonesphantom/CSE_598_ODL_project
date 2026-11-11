@@ -66,8 +66,15 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
 - [x] Add APS / RAPS prediction sets for the classifier (`ConformalClassifier`, `FrozenClassifier.predict_proba`)
 - [x] Abstain-and-alert logic: `alerts()` (set too large or gate fired), `selective_report()` (alert rate, silent miss rate), `max_size_for_budget()`. Person miss rate waits on the detection harness
 - [x] `scripts/run_conformal.py` + `tests/test_conformal.py` (7 tests, full suite passes)
-- [ ] Run it (~10 min on MPS): `python scripts/run_conformal.py --per-class 20 --cal-per-class 50`. Check in `headline.json`: conformal vs fixed-0.6 clean false-alarm rate, clean coverage ≈ 0.9, how much coverage drops / set size grows under perturbation, and whether `detector` / `oracle` restoration recovers it
-- [ ] Then rerun Stage 3 with the conformal gate and compare `detector_classical` against the fixed-threshold run
+- [x] Run it (~13 min on MPS): `python scripts/run_conformal.py --per-class 20 --cal-per-class 50` → `results/conformal/` (run 2026-11-10, 500 cal / 200 val images)
+      - Gate: clean false alarms 5.5% for both conformal and fixed 0.6; conformal flags 80.2% of perturbed images vs 71.4%. Big routing gains on boundary_erase, foreground_occlusion, background_removal, low_contrast L1; worse on jpeg L1, grayscale L1–2, gaussian_noise L1, inversion L3. Neither gate catches foreground_blur / boundary_blur
+      - RAPS: clean coverage 0.97, set size 4.5 → perturbed 0.92, 9.8. Alerts catch 88% of perturbed errors (4% silent miss), but clean alert rate is 9.5%
+      - Restoration (`detector` / `oracle`) does not recover coverage: accuracy 0.68 → 0.65, coverage 0.92 → 0.90
+- [ ] **Fix APS:** qhat ≈ 1.0 and mean set size is 806 of 1000 classes, so the sets are useless. Likely cause: clean error rate (17.5%) > alpha (10%) with confident wrong predictions over 1000 ImageNet classes. Restrict `predict_proba` to the 10 Imagenette classes and renormalize, use float64 cumsum, consider randomized APS; then rerun `run_conformal.py`
+- [ ] Check why the RAPS clean alert rate (9.5%) exceeds the alert budget on val
+- [ ] Rerun Stage 3 with the conformal gate and compare `detector_classical` against the fixed-threshold run. Quick version (same 100 images for both, no cues):
+      `python scripts/run_restoration.py --per-class 10 --cues --baselines --combo-cues --depth-sources perturbed --conformal-gate results/conformal/headline.json --out results/restoration_conformal`, then the same without `--conformal-gate` into `results/restoration_fixed_small`
+- [ ] Note: the system Python 3.10 (`/Library/Frameworks/Python.framework/Versions/3.10/bin/python3`) has the deps; Anaconda's `python` lacks `transformers` / `cv2`
 
 ## Rohith: Benchmarking lead + learned / generative restoration
 - [ ] Pick the reference benchmark protocol (ImageNet-C / Imagenette-C severities) and document how ours maps to it
