@@ -1,0 +1,422 @@
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/google/api_core/_python_version_support.py:246: FutureWarning: You are using a non-supported Python version (3.10.11). Google will not post any further updates to google.api_core supporting this Python version. Please upgrade to the latest Python version, or at least Python 3.11, and then update google.api_core.
+  warnings.warn(message, FutureWarning)
+images:   0%|          | 0/100 [00:00<?, ?it/s]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:   1%|          | 1/100 [00:02<04:24,  2.67s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:   2%|▏         | 2/100 [00:04<03:52,  2.37s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:   3%|▎         | 3/100 [00:07<03:58,  2.45s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:   4%|▍         | 4/100 [00:09<03:54,  2.44s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:   5%|▌         | 5/100 [00:12<04:05,  2.59s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:   6%|▌         | 6/100 [00:15<04:05,  2.61s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:   7%|▋         | 7/100 [00:18<04:05,  2.64s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:   8%|▊         | 8/100 [00:20<04:03,  2.64s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:   9%|▉         | 9/100 [00:22<03:51,  2.54s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  10%|█         | 10/100 [00:25<03:42,  2.47s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  11%|█         | 11/100 [00:28<03:49,  2.57s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  12%|█▏        | 12/100 [00:30<03:44,  2.55s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  13%|█▎        | 13/100 [00:33<03:46,  2.60s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  14%|█▍        | 14/100 [00:35<03:34,  2.49s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  15%|█▌        | 15/100 [00:37<03:28,  2.45s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  16%|█▌        | 16/100 [00:40<03:31,  2.51s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  17%|█▋        | 17/100 [00:43<03:29,  2.53s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  18%|█▊        | 18/100 [00:45<03:20,  2.44s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  19%|█▉        | 19/100 [00:47<03:10,  2.36s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  20%|██        | 20/100 [00:50<03:13,  2.42s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  21%|██        | 21/100 [00:53<03:23,  2.58s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  22%|██▏       | 22/100 [00:55<03:11,  2.46s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  23%|██▎       | 23/100 [00:59<03:39,  2.85s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  24%|██▍       | 24/100 [01:01<03:28,  2.75s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  25%|██▌       | 25/100 [01:04<03:24,  2.73s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  26%|██▌       | 26/100 [01:06<03:11,  2.59s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  27%|██▋       | 27/100 [01:08<03:05,  2.54s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  28%|██▊       | 28/100 [01:11<03:09,  2.63s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  29%|██▉       | 29/100 [01:13<02:55,  2.48s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  30%|███       | 30/100 [01:15<02:45,  2.37s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  31%|███       | 31/100 [01:18<02:54,  2.54s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  32%|███▏      | 32/100 [01:21<03:03,  2.69s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  33%|███▎      | 33/100 [01:24<02:52,  2.58s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  34%|███▍      | 34/100 [01:27<02:53,  2.63s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  35%|███▌      | 35/100 [01:29<02:55,  2.70s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  36%|███▌      | 36/100 [01:32<02:48,  2.63s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  37%|███▋      | 37/100 [01:34<02:37,  2.51s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  38%|███▊      | 38/100 [01:36<02:31,  2.44s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  39%|███▉      | 39/100 [01:38<02:21,  2.33s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  40%|████      | 40/100 [01:41<02:26,  2.44s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  41%|████      | 41/100 [01:43<02:22,  2.42s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  42%|████▏     | 42/100 [01:46<02:20,  2.43s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  43%|████▎     | 43/100 [01:48<02:20,  2.46s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  44%|████▍     | 44/100 [01:51<02:20,  2.50s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  45%|████▌     | 45/100 [01:53<02:12,  2.41s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  46%|████▌     | 46/100 [01:56<02:12,  2.44s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  47%|████▋     | 47/100 [01:59<02:16,  2.57s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  48%|████▊     | 48/100 [02:01<02:12,  2.55s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  49%|████▉     | 49/100 [02:04<02:11,  2.57s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  50%|█████     | 50/100 [02:06<02:05,  2.52s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  51%|█████     | 51/100 [02:09<02:03,  2.52s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  52%|█████▏    | 52/100 [02:11<02:00,  2.51s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  53%|█████▎    | 53/100 [02:13<01:53,  2.41s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  54%|█████▍    | 54/100 [02:16<01:53,  2.47s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  55%|█████▌    | 55/100 [02:19<01:54,  2.54s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  56%|█████▌    | 56/100 [02:21<01:53,  2.57s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  57%|█████▋    | 57/100 [02:24<01:51,  2.59s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  58%|█████▊    | 58/100 [02:26<01:46,  2.54s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  59%|█████▉    | 59/100 [02:29<01:47,  2.62s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  60%|██████    | 60/100 [02:32<01:45,  2.64s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  61%|██████    | 61/100 [02:35<01:44,  2.67s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  62%|██████▏   | 62/100 [02:37<01:36,  2.53s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  63%|██████▎   | 63/100 [02:39<01:34,  2.55s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  64%|██████▍   | 64/100 [02:42<01:35,  2.65s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  65%|██████▌   | 65/100 [02:45<01:30,  2.59s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  66%|██████▌   | 66/100 [02:47<01:23,  2.46s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  67%|██████▋   | 67/100 [02:49<01:19,  2.41s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  68%|██████▊   | 68/100 [02:52<01:20,  2.50s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  69%|██████▉   | 69/100 [02:54<01:15,  2.44s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  70%|███████   | 70/100 [02:56<01:12,  2.40s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  71%|███████   | 71/100 [02:59<01:11,  2.48s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  72%|███████▏  | 72/100 [03:02<01:11,  2.54s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  73%|███████▎  | 73/100 [03:04<01:07,  2.51s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  74%|███████▍  | 74/100 [03:07<01:03,  2.43s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  75%|███████▌  | 75/100 [03:09<01:03,  2.54s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  76%|███████▌  | 76/100 [03:12<01:01,  2.55s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  77%|███████▋  | 77/100 [03:14<00:57,  2.48s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  78%|███████▊  | 78/100 [03:17<00:53,  2.45s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  79%|███████▉  | 79/100 [03:19<00:50,  2.38s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  80%|████████  | 80/100 [03:21<00:49,  2.48s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  81%|████████  | 81/100 [03:24<00:46,  2.46s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  82%|████████▏ | 82/100 [03:26<00:42,  2.39s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  83%|████████▎ | 83/100 [03:29<00:41,  2.44s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  84%|████████▍ | 84/100 [03:31<00:37,  2.32s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  85%|████████▌ | 85/100 [03:34<00:37,  2.51s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  86%|████████▌ | 86/100 [03:36<00:35,  2.53s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  87%|████████▋ | 87/100 [03:39<00:32,  2.53s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  88%|████████▊ | 88/100 [03:41<00:30,  2.50s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  89%|████████▉ | 89/100 [03:44<00:27,  2.47s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  90%|█████████ | 90/100 [03:46<00:24,  2.40s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  91%|█████████ | 91/100 [03:48<00:21,  2.36s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  92%|█████████▏| 92/100 [03:51<00:19,  2.41s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  93%|█████████▎| 93/100 [03:53<00:16,  2.42s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  94%|█████████▍| 94/100 [03:55<00:14,  2.41s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  95%|█████████▌| 95/100 [03:58<00:12,  2.46s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  96%|█████████▌| 96/100 [04:01<00:09,  2.49s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  97%|█████████▋| 97/100 [04:03<00:07,  2.50s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  98%|█████████▊| 98/100 [04:05<00:04,  2.36s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images:  99%|█████████▉| 99/100 [04:07<00:02,  2.33s/it]/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/skimage/metrics/simple_metrics.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+  return 10 * np.log10((data_range**2) / err)
+images: 100%|██████████| 100/100 [04:10<00:00,  2.39s/it]images: 100%|██████████| 100/100 [04:10<00:00,  2.50s/it]
+Strengths: tuned
+            method depth_source  acc_on_perturbed  acc_on_held_out  acc_on_clean  restore_ms
+detector_classical       unused          0.642619         0.713333          0.81   29.866329
+              none       unused          0.669524         0.720000          0.80    0.000000
+  oracle_classical       unused          0.637619              NaN           NaN    3.792903

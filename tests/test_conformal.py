@@ -95,3 +95,33 @@ def test_gate_decide_matches_detector_interface(image):
     assert gate.decide(1.0 - image).label == "inversion"
     assert gate.decide(image).label == CLEAN
     assert ConformalGate(detector, threshold=float("inf"), alpha=0.0).decide(1.0 - image).label == CLEAN
+
+
+def test_restrict_to_classes_renormalizes_and_remaps_labels():
+    from bolero.conformal import restrict_to_classes
+    rng = np.random.default_rng(1)
+    probs = rng.dirichlet(np.ones(1000), size=8)
+    index = [0, 217, 482]
+    labels = np.array([217, 0, 482, 217, 0, 0, 482, 217])
+    sub, mapped = restrict_to_classes(probs, index, labels)
+    assert sub.shape == (8, 3)
+    np.testing.assert_allclose(sub.sum(axis=1), 1.0)
+    np.testing.assert_array_equal(mapped, [1, 0, 2, 1, 0, 0, 2, 1])
+    np.testing.assert_allclose(sub[:, 1] / sub[:, 0], probs[:, 217] / probs[:, 0])
+
+
+def test_randomized_aps_avoids_trivial_sets_on_sharp_model():
+    rng = np.random.default_rng(2)
+    n, c, alpha = 4000, 10, 0.1
+    labels = rng.integers(0, c, n)
+    probs = _dirichlet_probs(rng, n, c, labels, sharpness=12.0)  # near one-hot, like a frozen CNN
+    wrong = rng.random(n) < 0.15                                  # error rate > alpha
+    probs[wrong] = np.roll(probs[wrong], 1, axis=1)
+    cal, test = slice(0, 2000), slice(2000, None)
+    sizes = {}
+    for randomized in (True, False):
+        model = ConformalClassifier.calibrate(probs[cal], labels[cal], alpha, randomized=randomized)
+        m = set_metrics(model.sets(probs[test]), labels[test])
+        assert m["coverage"] >= 1 - alpha - 0.02
+        sizes[randomized] = m["mean_set_size"]
+    assert sizes[True] < sizes[False] - 0.5

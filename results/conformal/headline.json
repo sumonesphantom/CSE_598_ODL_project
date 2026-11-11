@@ -1,5 +1,7 @@
 {
   "calibration_images": 500,
+  "label_space": "imagenette",
+  "randomized_sets": true,
   "val_images": 200,
   "gate": {
     "alpha": 0.05,
@@ -11,95 +13,95 @@
   },
   "sets": {
     "aps": {
-      "qhat": 0.9999998807907104,
-      "alert_max_set_size": 1000,
+      "qhat": 0.8854689153730348,
+      "alert_max_set_size": 1,
       "none_clean": {
-        "coverage": 1.0,
-        "mean_set_size": 806.435,
+        "coverage": 0.995,
+        "mean_set_size": 1.025,
         "accuracy": 0.825
       },
       "none_perturbed": {
-        "coverage": 1.0,
-        "mean_set_size": 898.3040476190477,
+        "coverage": 0.9867857142857143,
+        "mean_set_size": 1.264047619047619,
         "accuracy": 0.6792857142857143
       },
       "detector_clean": {
         "coverage": 1.0,
-        "mean_set_size": 806.615,
+        "mean_set_size": 1.03,
         "accuracy": 0.825
       },
       "detector_perturbed": {
-        "coverage": 1.0,
-        "mean_set_size": 893.9271428571428,
+        "coverage": 0.9778571428571429,
+        "mean_set_size": 1.3371428571428572,
         "accuracy": 0.6458333333333334
       },
       "oracle_clean": {
         "coverage": 1.0,
-        "mean_set_size": 806.435,
+        "mean_set_size": 1.03,
         "accuracy": 0.825
       },
       "oracle_perturbed": {
-        "coverage": 1.0,
-        "mean_set_size": 893.9340476190476,
+        "coverage": 0.9769047619047619,
+        "mean_set_size": 1.3458333333333334,
         "accuracy": 0.6445238095238095
       },
       "alerts_perturbed_none": {
-        "alert_rate": 0.8022619047619047,
-        "answered_accuracy": 0.6345574954846478,
-        "silent_miss_rate": 0.07226190476190476,
-        "errors_caught": 0.7746844840386043
+        "alert_rate": 0.8258333333333333,
+        "answered_accuracy": 0.7183868762816131,
+        "silent_miss_rate": 0.04904761904761905,
+        "errors_caught": 0.8470675575352635
       },
       "alerts_clean_none": {
-        "alert_rate": 0.055,
-        "answered_accuracy": 0.8359788359788359,
-        "silent_miss_rate": 0.155,
-        "errors_caught": 0.11428571428571428
+        "alert_rate": 0.06,
+        "answered_accuracy": 0.8404255319148937,
+        "silent_miss_rate": 0.15,
+        "errors_caught": 0.14285714285714285
       }
     },
     "raps": {
-      "qhat": 1.0,
-      "alert_max_set_size": 19,
+      "qhat": 0.9062216453932754,
+      "alert_max_set_size": 1,
       "none_clean": {
-        "coverage": 0.97,
-        "mean_set_size": 4.535,
+        "coverage": 1.0,
+        "mean_set_size": 1.035,
         "accuracy": 0.825
       },
       "none_perturbed": {
-        "coverage": 0.9208333333333333,
-        "mean_set_size": 9.772976190476191,
+        "coverage": 0.9866666666666667,
+        "mean_set_size": 1.2711904761904762,
         "accuracy": 0.6792857142857143
       },
       "detector_clean": {
-        "coverage": 0.97,
-        "mean_set_size": 4.555,
+        "coverage": 1.0,
+        "mean_set_size": 1.035,
         "accuracy": 0.825
       },
       "detector_perturbed": {
-        "coverage": 0.8988095238095238,
-        "mean_set_size": 10.173214285714286,
+        "coverage": 0.9785714285714285,
+        "mean_set_size": 1.3408333333333333,
         "accuracy": 0.6458333333333334
       },
       "oracle_clean": {
-        "coverage": 0.97,
-        "mean_set_size": 4.535,
+        "coverage": 1.0,
+        "mean_set_size": 1.035,
         "accuracy": 0.825
       },
       "oracle_perturbed": {
-        "coverage": 0.8977380952380952,
-        "mean_set_size": 10.276428571428571,
+        "coverage": 0.9772619047619048,
+        "mean_set_size": 1.351547619047619,
         "accuracy": 0.6445238095238095
       },
       "alerts_perturbed_none": {
-        "alert_rate": 0.8422619047619048,
-        "answered_accuracy": 0.7471698113207547,
-        "silent_miss_rate": 0.03988095238095238,
-        "errors_caught": 0.8756495916852264
+        "alert_rate": 0.8291666666666667,
+        "answered_accuracy": 0.729616724738676,
+        "silent_miss_rate": 0.04619047619047619,
+        "errors_caught": 0.8559762435040832
       },
       "alerts_clean_none": {
-        "alert_rate": 0.095,
-        "answered_accuracy": 0.850828729281768,
-        "silent_miss_rate": 0.135,
-        "errors_caught": 0.22857142857142856
+        "alert_rate": 0.065,
+        "answered_accuracy": 0.8449197860962567,
+        "silent_miss_rate": 0.145,
+        "errors_caught": 0.17142857142857143
       }
     }
   }

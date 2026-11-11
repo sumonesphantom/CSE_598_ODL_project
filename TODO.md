@@ -70,10 +70,16 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
       - Gate: clean false alarms 5.5% for both conformal and fixed 0.6; conformal flags 80.2% of perturbed images vs 71.4%. Big routing gains on boundary_erase, foreground_occlusion, background_removal, low_contrast L1; worse on jpeg L1, grayscale L1–2, gaussian_noise L1, inversion L3. Neither gate catches foreground_blur / boundary_blur
       - RAPS: clean coverage 0.97, set size 4.5 → perturbed 0.92, 9.8. Alerts catch 88% of perturbed errors (4% silent miss), but clean alert rate is 9.5%
       - Restoration (`detector` / `oracle`) does not recover coverage: accuracy 0.68 → 0.65, coverage 0.92 → 0.90
-- [ ] **Fix APS:** qhat ≈ 1.0 and mean set size is 806 of 1000 classes, so the sets are useless. Likely cause: clean error rate (17.5%) > alpha (10%) with confident wrong predictions over 1000 ImageNet classes. Restrict `predict_proba` to the 10 Imagenette classes and renormalize, use float64 cumsum, consider randomized APS; then rerun `run_conformal.py`
-- [ ] Check why the RAPS clean alert rate (9.5%) exceeds the alert budget on val
-- [ ] Rerun Stage 3 with the conformal gate and compare `detector_classical` against the fixed-threshold run. Quick version (same 100 images for both, no cues):
-      `python scripts/run_restoration.py --per-class 10 --cues --baselines --combo-cues --depth-sources perturbed --conformal-gate results/conformal/headline.json --out results/restoration_conformal`, then the same without `--conformal-gate` into `results/restoration_fixed_small`
+- [x] **Fix APS** (old run kept in `results/conformal_v1_1000class_deterministic/`): qhat was ≈ 1.0 with sets of 806/1000 classes. Two causes: sets ranged over 1000 ImageNet classes, and deterministic APS scores a confident *correct* prediction at ~1.0, so qhat hit 1.0 and float ties let every class in. Fix: `restrict_to_classes()` (sets over the 10 Imagenette classes, `--label-space`) + randomized APS/RAPS (`--no-randomize` restores old behavior); 2 new tests, 124 pass. Rerun (same 200 val images):
+      - APS qhat 0.886: clean coverage 0.995, set size 1.03 → perturbed 0.987, 1.26. RAPS now near-identical (its penalty had masked the APS bug)
+      - Alerts: clean alert rate 6.0% (budget 5%, within noise; RAPS 9.5% issue gone), catch 85% of perturbed errors, silent miss 4.9%
+      - 10-class coverage stays high under perturbation while 1000-way top-1 drops 0.825 → 0.68; the alert rule (set > 1 or gate fired) carries the safety
+      - Restoration still lowers coverage (0.987 → 0.977) and accuracy (0.68 → 0.65)
+- [x] Stage 3, conformal gate vs fixed 0.6, `detector_classical`, same 100 val images, no cues (`results/restoration_conformal/`, `results/restoration_fixed_small/`):
+      - Mean Δacc over perturbed conditions: conformal −2.9 pp vs fixed −2.6 pp (fix rate 6.4% vs 5.2%, break rate 8.0% vs 6.9%). Clean: 0.80 → 0.80 vs 0.81
+      - The gate routes more images, but routing more just applies the classical plans more often, and those plans hurt on average: gaussian_noise L3 −32 pp, background_removal L3 −20, foreground_occlusion L2 −11 (conformal) vs −4 (fixed). Gains only on gaussian_blur (+6–8) and brighten/jpeg L3 (+4)
+      - **Takeaway:** the gate is better at detection; the bottleneck is the restoration plans. Fix or drop the noise / background_removal / occlusion plans (or pass through for them) before gating matters
+- [ ] Restoration plan audit: for each perturbation where `oracle_classical` Δacc < 0, pass through instead of restoring, then rerun the comparison
 - [ ] Note: the system Python 3.10 (`/Library/Frameworks/Python.framework/Versions/3.10/bin/python3`) has the deps; Anaconda's `python` lacks `transformers` / `cv2`
 
 ## Rohith: Benchmarking lead + learned / generative restoration

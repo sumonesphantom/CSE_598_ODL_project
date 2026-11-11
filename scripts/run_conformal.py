@@ -36,9 +36,10 @@ from bolero.conformal import (
     ConformalGate,
     alerts,
     max_size_for_budget,
+    restrict_to_classes,
     selective_report,
 )
-from bolero.config import RESULTS_DIR, SEED
+from bolero.config import IMAGENETTE_INDEX, RESULTS_DIR, SEED
 from bolero.data import list_images, load_image
 from bolero.depth import DepthCache
 from bolero.detection import CLEAN, PerturbationDetector, extract_features
@@ -79,6 +80,10 @@ def main() -> None:
                         help="must match train_detector.py --train-per-class")
     parser.add_argument("--fixed-threshold", type=float, default=0.6)
     parser.add_argument("--detector", type=Path, default=RESULTS_DIR / "detector" / "detector.joblib")
+    parser.add_argument("--label-space", choices=["imagenette", "imagenet"], default="imagenette",
+                        help="classes the prediction sets range over (imagenet = all 1000, near-trivial sets)")
+    parser.add_argument("--no-randomize", action="store_true",
+                        help="deterministic APS/RAPS (ties at 1.0 make APS sets near-trivial)")
     parser.add_argument("--backbone", default="resnet50")
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--device", default=None)
@@ -94,12 +99,17 @@ def main() -> None:
     cal_images = [load_image(r.path) for r in tqdm(cal, desc="calibration images")]
     cal_labels = np.array([r.label_index for r in cal])
     cal_probs = classify(classifier, cal_images, args.batch_size)
+    class_index = (np.array(sorted(IMAGENETTE_INDEX.values())) if args.label_space == "imagenette"
+                   else np.arange(cal_probs.shape[1]))
+    cal_probs, cal_labels = restrict_to_classes(cal_probs, class_index, cal_labels)
     gate = ConformalGate.calibrate(detector, np.stack([extract_features(im) for im in cal_images]),
                                    args.gate_alpha)
     methods = {
-        "aps": ConformalClassifier.calibrate(cal_probs, cal_labels, args.alpha),
-        "raps": ConformalClassifier.calibrate(cal_probs, cal_labels, args.alpha,
-                                              lam=args.raps_lambda, k_reg=args.raps_k),
+        "aps": ConformalClassifier.calibrate(cal_probs, cal_labels, args.alpha,
+                                             randomized=not args.no_randomize, seed=args.seed),
+        "raps": ConformalClassifier.calibrate(cal_probs, cal_labels, args.alpha, lam=args.raps_lambda,
+                                              k_reg=args.raps_k, randomized=not args.no_randomize,
+                                              seed=args.seed + 1),
     }
     max_size = {name: max_size_for_budget(m.sets(cal_probs).sum(1), args.alert_budget)
                 for name, m in methods.items()}
@@ -135,8 +145,9 @@ def main() -> None:
                 images.append(stage_images[stage])
         # Classify one image's conditions at a time; only set sizes and coverage are kept.
         probs = classify(classifier, images, args.batch_size)
-        label = np.full(len(probs), record.label_index)
-        result = {"correct": probs.argmax(1) == label}
+        # Top-1 accuracy stays 1000-way (as in every other stage); sets use the chosen label space.
+        result = {"correct": probs.argmax(1) == record.label_index}
+        probs, label = restrict_to_classes(probs, class_index, np.full(len(probs), record.label_index))
         for name, method in methods.items():
             sets = method.sets(probs)
             result[f"{name}_size"] = sets.sum(1)
@@ -182,6 +193,8 @@ def main() -> None:
     none = df[df["stage"] == "none"]
     headline = {
         "calibration_images": len(cal),
+        "label_space": args.label_space,
+        "randomized_sets": not args.no_randomize,
         "val_images": int(is_clean.sum()),
         "gate": {
             "alpha": args.gate_alpha,
