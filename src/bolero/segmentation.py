@@ -64,7 +64,10 @@ class Segmenter:
             self.pipe = pipeline("mask-generation", model=SEGMENTERS[kind], framework="pt",
                                  device=self.device)
         elif kind == "detr":
-            self.pipe = pipeline("object-detection", model=SEGMENTERS[kind], revision="no_timm",
+            # The `no_timm` revision carries `dilation: null`, which transformers 5.x
+            # rejects during config validation. The main revision uses the timm
+            # ResNet-50 backbone instead (see requirements.txt).
+            self.pipe = pipeline("object-detection", model=SEGMENTERS[kind],
                                  framework="pt", device=self.device)
         else:
             raise ValueError(f"unknown segmenter {kind!r}; choose from {list(SEGMENTERS)}")

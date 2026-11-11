@@ -141,9 +141,15 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
 - [x] Define the VLM scoring: entity match, damage match (only when it overlaps the entity), geometric relation with a VLM fallback, and label utility (`vlm_scoring.py`)
 - [x] Build the 30-case human review packet and agreement/kappa scorer (`scripts/make_vlm_review.py`); run it on the final VLM predictions
 - [ ] Rerun the decider comparison on the `weather` taxonomy once Aravind's physics rain/dust perturbations land; retrain the RF on those classes
-- [ ] Run the structure compare (moved from Venkat): does a SAM or DETR outline fix the church failure case that the depth outline misses? SAM runs on CPU (~9 s/image), so use the short version (~1¾ h on MPS):
-      `python scripts/run_structure_compare.py --per-class 10 --perturbations gaussian_blur foreground_blur --out results/structure`
-      Full version (~4 h at `--per-class 10` with all 5 default perturbations, ~8 h at `--per-class 20`): drop `--perturbations`. Then check `results/structure/per_class.csv` for `church`, and if SAM/DETR wins, rerun Stage 3 with `--structure-source sam` (or `detr`) `--depth-sources perturbed`
+- [x] Structure source swap, short version (2026-11-11): no SAM/DETR win. 100 val images, `gaussian_blur` + `foreground_blur`, 3 sources, 2 cues, paired deltas with 95% bootstrap CIs:
+      | Source | Time | Delta (boundary) | Delta (separation) | Fix / break |
+      |---|---|---|---|---|
+      | depth | 49 ms | -0.71 pp [-2.71, +1.29] | -0.43 pp [-1.71, +0.71] | 17 / 22 |
+      | SAM | 4.7 s | -0.43 pp [-2.43, +1.71] | -1.29 pp [-2.86, +0.14] | 17 / 20 |
+      | DETR | 190 ms | -3.14 pp [-5.29, -1.29] | -1.14 pp [-2.71, +0.14] | 7 / 29 |
+      - DETR is the only source whose CI excludes zero, and it is harmful (breaks 29, fixes 7). SAM is neutral and ~95x slower than depth
+      - Church: SAM +1.4 pp (1/70, CI [-7.1, +10.0]), depth -1.4, DETR 0.0. Church clean accuracy is 30.8% over the full val set, so this is a classifier limitation, not a missing structure source
+      - Decision: keep depth as the default; do not rerun Stage 3 with SAM/DETR. Run: `python scripts/run_structure_compare.py --per-class 10 --perturbations gaussian_blur foreground_blur --out results/structure`
 
 ## Kushi: Literature, failure analysis + attacks
 - [ ] Summarize the professor's papers (incl. Aditya's DARPA/ECML paper): method, dataset, metric, what we can reuse
