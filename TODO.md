@@ -151,9 +151,9 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
       - Church: SAM +1.4 pp (1/70, CI [-7.1, +10.0]), depth -1.4, DETR 0.0. Church clean accuracy is 30.8% over the full val set, so this is a classifier limitation, not a missing structure source
       - Decision: keep depth as the default; do not rerun Stage 3 with SAM/DETR. Run: `python scripts/run_structure_compare.py --per-class 10 --perturbations gaussian_blur foreground_blur --out results/structure`
 
-## Kushi: Literature, failure analysis + attacks
+## Khushi: Literature, failure analysis + attacks
 - [ ] Summarize the professor's papers (incl. Aditya's DARPA/ECML paper): method, dataset, metric, what we can reuse
-- [ ] Summarize XWOD, DAWN, RID/RIS, AdvRain, Laya and one conformal-detection paper in the same format
+- [x] Summarize XWOD, DAWN, RID/RIS, AdvRain, Laya and one conformal-detection paper in the same format → [`docs/literature_summaries.md`](docs/literature_summaries.md)
 - [ ] Reproduce weather-shaped attacks against the detector: [AdvRain](https://arxiv.org/abs/2303.01338) (adversarial raindrop sticker) and [adversarial rain streaks](https://arxiv.org/abs/2009.09205)
 - [ ] Check whether the condition detector + conformal gate catch these attacks, or whether they pass as natural rain (with Venkat)
 - [ ] Defense: adversarial rain augmentation for the restorer, as in arXiv 2009.09205 (with Rohith)
