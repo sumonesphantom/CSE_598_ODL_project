@@ -65,3 +65,57 @@ def test_parse_voc_and_yolo_layout(tmp_path):
     assert [s.condition for s in samples] == ["rain"]          # snow dropped
     assert samples[0].labels == ["car"]                         # non-target class dropped
     np.testing.assert_allclose(samples[0].boxes, [[80, 30, 120, 70]])
+
+
+def test_xwod_release_layout(tmp_path):
+    """XWOD v1.1 as Kaggle ships it: nested folders, data.v1.1.yaml, <split>.v1.1/images, "bike"."""
+    from PIL import Image
+    from bolero.weather_data import load_xwod
+    release = tmp_path / "xwod" / "XWOD_dataset.v1.1" / "XWOD_dataset.v1.1"
+    for split in ("test", "valid"):
+        (release / f"{split}.v1.1" / "images").mkdir(parents=True)
+        (release / f"{split}.v1.1" / "labels").mkdir(parents=True)
+    (release / "data.v1.1.yaml").write_text("nc: 3\nnames:\n- person\n- car\n- bike\n")
+    for stem in ("heavy_rain_test_00001", "dust_test_00001", "fog_test_00001"):
+        Image.new("RGB", (100, 50)).save(release / "test.v1.1" / "images" / f"{stem}.jpg")
+    # No trailing newline, as in the release files.
+    (release / "test.v1.1" / "labels" / "heavy_rain_test_00001.txt").write_text("2 0.5 0.5 0.2 0.4\n1 0.1 0.1 0.1 0.1")
+    Image.new("RGB", (100, 50)).save(release / "valid.v1.1" / "images" / "dust_valid_00001.jpg")
+
+    samples = load_xwod(tmp_path / "xwod")
+    assert sorted(s.condition for s in samples) == ["dust", "rain"]     # fog dropped
+    rain = next(s for s in samples if s.condition == "rain")
+    assert rain.labels == ["bicycle", "car"]                            # bike counts as bicycle
+    np.testing.assert_allclose(rain.boxes[0], [40, 15, 60, 35])
+    assert [s.condition for s in load_xwod(tmp_path / "xwod", split="val")] == ["dust"]
+
+
+def test_xwod_condition_matches_whole_words():
+    from bolero.weather_data import _xwod_condition
+    assert _xwod_condition("heavy_rain_train_00001.jpg") == "rain"
+    assert _xwod_condition("dust_train_00001.jpg") == "dust"
+    assert _xwod_condition("Sand/haze_01.jpg") == "dust"
+    for name in ("flooding_train_00001.jpg", "snow_train_00001.jpg", "fog_valid_00001.jpg", "train/x.jpg"):
+        assert _xwod_condition(name) is None
+
+
+def test_exif_orientation_is_applied(tmp_path):
+    """XWOD boxes match the EXIF-oriented view (dust_test_00034 is mirrored, tag 2)."""
+    from PIL import Image
+    from bolero.weather_data import load_yolo_dataset, open_rgb
+    root = tmp_path / "ds"
+    (root / "images" / "test").mkdir(parents=True)
+    (root / "labels" / "test").mkdir(parents=True)
+    (root / "data.yaml").write_text("names: [car]\n")
+    raw = Image.new("RGB", (100, 50))
+    raw.paste((255, 0, 0), (0, 0, 10, 10))
+    for name, tag in (("rain_mirror", 2), ("rain_rotated", 6)):
+        exif = Image.Exif()
+        exif[0x0112] = tag
+        raw.save(root / "images" / "test" / f"{name}.jpg", exif=exif, quality=100)
+        (root / "labels" / "test" / f"{name}.txt").write_text("0 0.5 0.5 0.5 0.5")
+    mirrored = open_rgb(root / "images" / "test" / "rain_mirror.jpg")
+    assert mirrored.size == (100, 50) and mirrored.getpixel((95, 4))[0] > 200   # red corner moved right
+    assert open_rgb(root / "images" / "test" / "rain_rotated.jpg").size == (50, 100)
+    sizes = {s.image_id: (s.width, s.height) for s in load_yolo_dataset(root, "test", "x")}
+    assert sizes == {"rain_mirror": (100, 50), "rain_rotated": (50, 100)}

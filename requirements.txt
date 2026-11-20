@@ -12,6 +12,9 @@ opencv-python>=4.8
 matplotlib>=3.8
 pillow>=10.0
 tqdm
+pyyaml               # YOLO data.yaml (XWOD)
+diffusers>=0.30      # InstructPix2Pix (generative weather)
+accelerate           # diffusers model loading
 jupyter
 nbclient
 pytest

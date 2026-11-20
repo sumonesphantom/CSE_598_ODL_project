@@ -35,7 +35,7 @@ from bolero.baselines import BASELINES, apply_baseline
 from bolero.config import RESULTS_DIR
 from bolero.detection_eval import FrozenDetector, evaluate
 from bolero.tuning import load_strengths, method_key
-from bolero.weather_data import load_dawn, load_xwod
+from bolero.weather_data import load_dawn, load_xwod, open_rgb
 
 
 def preprocess(method: str, image: Image.Image, strengths: dict) -> Image.Image:
@@ -77,8 +77,7 @@ def main() -> None:
     detector = FrozenDetector(args.model, device=args.device, min_score=args.min_score)
     dets = {m: [] for m in methods}
     for s in tqdm(samples, desc="images"):
-        with Image.open(s.path) as im:
-            image = im.convert("RGB")
+        image = open_rgb(s.path)  # EXIF orientation applied for every method alike
         for m in methods:
             dets[m].append(detector(preprocess(m, image, strengths)))
 

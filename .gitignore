@@ -33,6 +33,8 @@ data/dawn/
 data/xwod/
 data/sdsi/
 data/virada/
+data/coco/
+data/generative/
 
 # Large pipeline outputs (summaries, figures and SUMMARY.md stay tracked)
 results/*/records.csv.gz
