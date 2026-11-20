@@ -370,7 +370,20 @@ python scripts/probe_resolutions.py
 python scripts/run_decider_compare.py --help
 python scripts/run_vlm_eval.py --help
 python scripts/make_vlm_review.py --help
+
+# weather track: real rain / dust data, synthetic weather, detection (results in TODO.md)
+kaggle datasets download kuantinglai/exwod -p data/xwod --unzip       # XWOD v1.1 (needs a Kaggle API key)
+python scripts/run_detection.py                                       # frozen DETR on DAWN + XWOD
+python scripts/run_diagnostic.py --perturbations rain_streaks rain_mist rain_lens dust_haze dust_storm --per-class 20 --out results/diagnostic_weather
+python scripts/make_generative_weather.py --source coco --n 300       # InstructPix2Pix rain / dust (needs data/coco)
+python scripts/make_generative_weather.py --source imagenette --per-class 20
+python scripts/run_generative_diagnostic.py                           # classifier drop under generative weather
+python scripts/run_degradation_compare.py                             # physics vs generative vs real, one detector
+python scripts/prepare_virada.py                                      # labelled VIRADA frames (range requests, ~9 MB kept)
+python scripts/train_weather_detector.py                              # clean / rain / dust RF: synthetic vs real training
 ```
+
+Weather-track data lives under `data/` and is git-ignored: `data/dawn/` (DAWN, Mendeley 10.17632/766ygrbt8y.3, CC BY-NC 3.0), `data/xwod/` (XWOD v1.1, Kaggle, CC BY-NC-SA 4.0, no redistribution), `data/coco/` (COCO val2017 images + `annotations/instances_val2017.json` from images.cocodataset.org), `data/virada/` (sampled frames, Zenodo 4715681, CC BY 4.0) and `data/generative/` (edits made by the scripts above).
 
 Useful flags (every script takes `--help`):
 
@@ -792,6 +805,10 @@ CSE_598_ODL_project/
 │   ├── restoration.py     classical restoration plans
 │   ├── detection.py       feature extraction and the conservative detector
 │   ├── conditions.py      degradation taxonomy and balanced sample provider
+│   ├── weather_data.py    DAWN / XWOD / COCO / condition-folder loaders (EXIF orientation applied)
+│   ├── detection_eval.py  frozen DETR and COCO-style mAP
+│   ├── generative.py      InstructPix2Pix rain / dust editor and CLIP embedder
+│   ├── degradation_compare.py  fast bootstrap mAP50, kernel distance, rank correlation
 │   ├── deciders.py        RF / Jev / local-LLM deciders and routing metrics
 │   ├── openrouter.py      OpenRouter Decisions API client (cache, retries, budget)
 │   ├── vlm.py             local Qwen2.5-VL client with a response cache
@@ -855,7 +872,7 @@ To reproduce, open the notebook and run all cells. It writes to `results/audit/`
 8. **The depth model plays two roles.** The boundary and depth-selective perturbations are built from Depth-Anything-V2's clean depth, and the cues use the same model. A second depth model, such as MiDaS v3.1, would separate the two.
 9. **Three severity levels.** Hendrycks & Dietterich (2019) use five per corruption.
 10. **Jev is nondeterministic.** TypeSafe reports slightly different probabilities between runs, so a single-sample comparison is noisy. Responses are cached for reproducibility, but the conformal threshold should be fit on a larger calibration sample than the 50 clean images here.
-11. **The weather taxonomy is not populated yet.** The main run uses the `family` taxonomy (clean plus the 14 perturbation families). The `weather` taxonomy (clean / rain / dust / other) is wired, but it needs the physics-based rain and dust perturbations from Aravind's track. The RF has no rain or dust classes, so it needs retraining before it can serve that task.
+11. **The decision-engine comparison still uses the `family` taxonomy.** The physics rain and dust perturbations now exist, and a clean / rain / dust random forest trained on real photos is in `results/weather_detector/` (see TODO.md), but `run_decider_compare.py` has not been re-run on the `weather` taxonomy. Real dust training data is XWOD only until SDSI is obtained.
 12. **The 320 px detector uses fewer training images.** It was trained at 20/class (top-1 81.2 %, clean false alarm 5.0 %) instead of the 160 px baseline's 40/class (83.2 %, 5.5 %), so part of the gap is training size, not resolution.
 13. **The VLM automatic scores are a proxy.** `entity_hit` and `damage_hit` use class-label matching and a depth-derived region, not human ground truth. The 30-case packet measures how often the proxy agrees with a human; report the kappa from that run.
 14. **The VLM grid is small.** Ten images, one severity, four occlusion conditions. It is enough to compare evidence configurations, not to estimate real-world accuracy.
