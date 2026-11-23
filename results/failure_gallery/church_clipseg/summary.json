@@ -1,0 +1,70 @@
+{
+  "class": "church",
+  "backbone": "resnet50",
+  "entity_source": "clipseg",
+  "images": 409,
+  "clean_accuracy": 0.3080684596577017,
+  "top_confusions": [
+    {
+      "pred_label": "monastery",
+      "count": 145,
+      "share_of_failures": 0.5123674911660777
+    },
+    {
+      "pred_label": "bell cote, bell cot",
+      "count": 31,
+      "share_of_failures": 0.10954063604240283
+    },
+    {
+      "pred_label": "vault",
+      "count": 21,
+      "share_of_failures": 0.07420494699646643
+    },
+    {
+      "pred_label": "altar",
+      "count": 18,
+      "share_of_failures": 0.0636042402826855
+    },
+    {
+      "pred_label": "castle",
+      "count": 10,
+      "share_of_failures": 0.0353356890459364
+    },
+    {
+      "pred_label": "palace",
+      "count": 10,
+      "share_of_failures": 0.0353356890459364
+    },
+    {
+      "pred_label": "beacon, lighthouse, beacon light, pharos",
+      "count": 7,
+      "share_of_failures": 0.024734982332155476
+    },
+    {
+      "pred_label": "boathouse",
+      "count": 5,
+      "share_of_failures": 0.0176678445229682
+    }
+  ],
+  "gallery_cases": {
+    "fixed": 1,
+    "broken": 2,
+    "still_wrong": 11,
+    "still_right": 2
+  },
+  "pages": [
+    "gallery_fail_1.png",
+    "gallery_fail_2.png",
+    "gallery_fail_3.png",
+    "gallery_ok_1.png"
+  ],
+  "wall_minutes": 0.6652069250742595,
+  "entity_only_accuracy": 0.24449877750611246,
+  "entity_found_rate": 0.9755501222493888,
+  "all_images": {
+    "fixed": 21,
+    "broken": 47,
+    "still_wrong": 262,
+    "still_right": 79
+  }
+}
