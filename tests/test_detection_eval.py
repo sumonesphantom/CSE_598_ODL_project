@@ -1,6 +1,7 @@
 """mAP and loader tests (no model loads)."""
 
 import numpy as np
+import pytest
 
 from bolero.detection_eval import Detections, average_precision, evaluate, iou_matrix
 from bolero.weather_data import load_yolo_dataset, parse_voc
@@ -119,3 +120,26 @@ def test_exif_orientation_is_applied(tmp_path):
     assert open_rgb(root / "images" / "test" / "rain_rotated.jpg").size == (50, 100)
     sizes = {s.image_id: (s.width, s.height) for s in load_yolo_dataset(root, "test", "x")}
     assert sizes == {"rain_mirror": (100, 50), "rain_rotated": (50, 100)}
+
+
+def test_load_carla_pairs_conditions(tmp_path):
+    import json
+
+    import cv2
+    import pandas as pd
+    from bolero.weather_data import carla_depth, load_carla
+    (tmp_path / "labels").mkdir()
+    (tmp_path / "depth").mkdir()
+    rows = []
+    for scene in ("town01_c00_t0", "town01_c00_t1"):
+        (tmp_path / "labels" / f"{scene}.json").write_text(json.dumps(
+            {"boxes": [[1, 2, 30, 40]], "labels": ["car"], "width": 64, "height": 48, "town": "Town01"}))
+        cv2.imwrite(str(tmp_path / "depth" / f"{scene}.png"), np.full((48, 64), 1234, np.uint16))
+        for cond, lv in (("clean", 0), ("rain", 2)):
+            rows.append({"scene": scene, "town": "Town01", "condition": cond, "level": lv, "path": f"{scene}_{cond}.jpg"})
+    pd.DataFrame(rows).to_csv(tmp_path / "manifest.csv", index=False)
+    clean, rain = load_carla(tmp_path), load_carla(tmp_path, "rain", 2)
+    assert [s.image_id for s in clean] == [s.image_id for s in rain] == ["town01_c00_t0", "town01_c00_t1"]
+    assert rain[0].condition == "rain" and rain[0].labels == ["car"]
+    np.testing.assert_allclose(rain[0].boxes, [[1, 2, 30, 40]])
+    assert carla_depth(tmp_path, "town01_c00_t0")[0, 0] == pytest.approx(12.34)
