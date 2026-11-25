@@ -16,6 +16,10 @@ Held-out test sets, never used for training:
                             is in both training and test)
   coco/clean                the 300-image COCO comparison sample
   imagenette/clean          200 Imagenette val images, a clean source no detector trained on
+  carla/clean|rain|dust     CARLA frames from held-out towns (Town10HD, Town02), when --carla exists
+
+With CARLA frames present, a fourth detector, `carla`, trains on the same clean pool plus CARLA
+clean / rain / dust frames from the other towns (simulator weather instead of physics filters).
 
 Images are resized to a 320-pixel short side before features, so resolution does not identify
 the dataset. A prediction counts as `decided` when the top label is not clean and has
@@ -47,7 +51,9 @@ from bolero.config import DATA_DIR, RESULTS_DIR, SEED
 from bolero.data import list_images
 from bolero.detection import CLEAN, PerturbationDetector, extract_features
 from bolero.perturbations import LEVELS, WEATHER, rng_for
-from bolero.weather_data import load_coco, load_condition_folders, load_dawn, load_xwod, open_rgb
+from bolero.weather_data import load_carla, load_coco, load_condition_folders, load_dawn, load_xwod, open_rgb
+
+CARLA_TEST_TOWNS = ("Town10HD_Opt", "Town02_Opt")   # held out from the CARLA-trained detector
 
 SIDE = 320
 THRESHOLD = 0.6
@@ -81,6 +87,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--virada", type=Path, default=DATA_DIR / "virada")
     parser.add_argument("--sdsi", type=Path, default=None, help="optional SDSI root (storm/ and clear/ folders)")
+    parser.add_argument("--carla", type=Path, default=DATA_DIR / "carla",
+                        help="CARLA frames (record_carla_weather.py); adds a CARLA-trained detector and CARLA tests")
     parser.add_argument("--coco-clean", type=int, default=300, help="extra COCO clean training images")
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--device", default=None)
@@ -130,6 +138,22 @@ def main() -> None:
     }
     training["combined"] = (np.vstack([training["real"][0], syn_x]), np.concatenate([training["real"][1], syn_y]))
 
+    carla_tests = {}
+    if (args.carla / "manifest.csv").exists():
+        # Simulator weather: CARLA clean + rain + dust (levels 1-3) from the training towns. CARLA clean
+        # frames join this detector's clean examples, or it could learn "rendered = weather".
+        def carla_paths(cond, test):
+            levels = (0,) if cond == "clean" else (1, 2, 3)
+            return [s.path for lv in levels for s in load_carla(args.carla, cond, lv)
+                    if (s.path.name.split("_")[0] in {t.split("_")[0].lower() for t in CARLA_TEST_TOWNS}) == test]
+        f_cc = feats(carla_paths("clean", False), "carla clean (train towns)")
+        f_cr = feats(carla_paths("rain", False), "carla rain (train towns)")
+        f_cd = feats(carla_paths("dust", False), "carla dust (train towns)")
+        training["carla"] = (np.vstack([f_clean, f_cc, f_cr, f_cd]),
+                             np.concatenate([clean_y, [CLEAN] * len(f_cc), ["rain"] * len(f_cr), ["dust"] * len(f_cd)]))
+        carla_tests = {"carla/clean": (carla_paths("clean", True), CLEAN), "carla/rain": (carla_paths("rain", True), "rain"),
+                       "carla/dust": (carla_paths("dust", True), "dust")}
+
     tests = {
         "xwod/rain": ([s.path for s in xwod_test if s.condition == "rain"], "rain"),
         "xwod/dust": ([s.path for s in xwod_test if s.condition == "dust"], "dust"),
@@ -141,6 +165,7 @@ def main() -> None:
         # Clean images from a source no detector trained on: guards against learning
         # "not COCO / VIRADA means weather" instead of rain and dust.
         "imagenette/clean": ([r.path for r in list_images("val", per_class=20, seed=args.seed)], CLEAN),
+        **carla_tests,
     }
     test_feats = {k: feats(paths, k) for k, (paths, _) in tests.items()}
 

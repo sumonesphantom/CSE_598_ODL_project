@@ -49,7 +49,8 @@ from bolero.detection_eval import FrozenDetector, evaluate
 from bolero.generative import ClipEmbedder
 from bolero.perturbations import LEVELS, WEATHER, rng_for
 from bolero.tuning import load_strengths, method_key
-from bolero.weather_data import CLASSES, load_coco, load_dawn, load_xwod, open_rgb
+from bolero.depth import normalize
+from bolero.weather_data import CLASSES, carla_depth, load_carla, load_coco, load_dawn, load_xwod, open_rgb
 
 CONDITIONS = ("rain", "dust")
 
@@ -75,12 +76,12 @@ def preprocess(method: str, x: np.ndarray, strengths: dict) -> Image.Image:
     return to_pil(apply_baseline(name, x, strengths[method_key("baseline", name)]))
 
 
-def set_specs(coco, real, args) -> list[dict]:
-    """Every image set: key, kind, condition, level, and how to load its images."""
-    specs = [{"key": "coco__clean", "kind": "clean", "condition": "clean", "level": 0}]
+def set_specs(coco, carla, real, args) -> list[dict]:
+    """Every image set: key, kind, clean source (base), condition, level, and how to load it."""
+    specs = [{"key": "coco__clean", "kind": "clean", "base": "coco", "condition": "clean", "level": 0}]
     for name, p in WEATHER.items():
         for level in LEVELS:
-            specs.append({"key": f"coco__physics_{name}__{level}", "kind": "physics", "effect": name,
+            specs.append({"key": f"coco__physics_{name}__{level}", "kind": "physics", "base": "coco", "effect": name,
                           "condition": p.family, "level": level})
     manifest = args.generative / "manifest.csv"
     if manifest.exists():
@@ -88,36 +89,59 @@ def set_specs(coco, real, args) -> list[dict]:
         for (cond, level), g in m.groupby(["condition", "level"]):
             paths = dict(zip(g["image_id"], g["path"]))
             if all(s.image_id in paths for s in coco):
-                specs.append({"key": f"coco__generative_{cond}__{level}", "kind": "generative",
+                specs.append({"key": f"coco__generative_{cond}__{level}", "kind": "generative", "base": "coco",
                               "effect": f"generative_{cond}", "condition": cond, "level": int(level), "paths": paths})
     else:
         print(f"no {manifest}; generative sets skipped (run make_generative_weather.py --source coco)")
+    if carla:
+        specs.append({"key": "carla__clean", "kind": "clean", "base": "carla", "condition": "clean", "level": 0})
+        for (cond, level), paths in carla["weather"].items():
+            specs.append({"key": f"carla__sim_{cond}__{level}", "kind": "carla_sim", "base": "carla",
+                          "effect": f"carla_{cond}", "condition": cond, "level": level, "paths": paths})
+        for name, p in WEATHER.items():
+            for level in LEVELS:
+                specs.append({"key": f"carla__physics_{name}__{level}", "kind": "physics", "base": "carla",
+                              "effect": f"carla+{name}", "condition": p.family, "level": level})
+                if p.needs_depth:  # the same effect from CARLA's true depth instead of Depth-Anything's
+                    specs.append({"key": f"carla__physicstrue_{name}__{level}", "kind": "physics_true_depth",
+                                  "base": "carla", "effect": f"carla+{name} (true depth)", "condition": p.family,
+                                  "level": level, "true_depth": True})
     for key in real:
         specs.append({"key": key, "kind": "real", "condition": key.split("__")[1], "level": 0})
     return specs
 
 
-def load_images(spec, coco, real, depths, depth_estimator):
+def true_depth(root, scene: str) -> np.ndarray:
+    """CARLA metres -> the physics effects' convention (normalized inverse depth, 1 = nearest),
+    normalized exactly like Depth-Anything's output so only depth accuracy differs."""
+    return normalize(1.0 / np.clip(carla_depth(root, scene), 0.5, None))
+
+
+def load_images(spec, sources, real, depths, depth_estimator, carla_root):
     """Yield (image_id, float RGB array) for a set; EXIF orientation applied throughout."""
     if spec["kind"] == "real":
         for s in real[spec["key"]]:
             yield s.image_id, np.asarray(open_rgb(s.path), np.float32) / 255.0
         return
-    for s in coco:
-        path = spec["paths"][s.image_id] if spec["kind"] == "generative" else s.path
+    for s in sources[spec["base"]]:
+        path = spec["paths"][s.image_id] if "paths" in spec else s.path
         x = np.asarray(open_rgb(path), np.float32) / 255.0
-        if spec["kind"] == "physics":
-            p = WEATHER[spec["effect"]]
+        if spec["kind"] in ("physics", "physics_true_depth"):
+            name = spec["key"].split("__")[1].split("_", 1)[1]
+            p = WEATHER[name]
             depth = None
             if p.needs_depth:
-                if s.image_id not in depths:
-                    depths[s.image_id] = depth_estimator()(x)
-                depth = depths[s.image_id]
-            x = p(x, spec["level"], depth, rng_for(s.image_id, spec["effect"], spec["level"], SEED))
+                if spec.get("true_depth"):
+                    depth = true_depth(carla_root, s.image_id)
+                else:
+                    if (spec["base"], s.image_id) not in depths:
+                        depths[(spec["base"], s.image_id)] = depth_estimator()(x)
+                    depth = depths[(spec["base"], s.image_id)]
+            x = p(x, spec["level"], depth, rng_for(s.image_id, name, spec["level"], SEED))
         yield s.image_id, x
 
 
-def detect(specs, coco, real, args, methods, strengths) -> None:
+def detect(specs, sources, real, args, methods, strengths) -> None:
     sets_dir = args.out / "sets"
     sets_dir.mkdir(parents=True, exist_ok=True)
     todo = [s for s in specs if not (sets_dir / f"{s['key']}.pkl.gz").exists()]
@@ -136,8 +160,9 @@ def detect(specs, coco, real, args, methods, strengths) -> None:
 
     for spec in todo:
         ids, dets, views = [], {m: [] for m in methods}, []
-        total = len(real[spec["key"]]) if spec["kind"] == "real" else len(coco)
-        for image_id, x in tqdm(load_images(spec, coco, real, depths, depth_estimator), desc=spec["key"], total=total):
+        total = len(real[spec["key"]]) if spec["kind"] == "real" else len(sources[spec["base"]])
+        for image_id, x in tqdm(load_images(spec, sources, real, depths, depth_estimator, args.carla),
+                                desc=spec["key"], total=total):
             ids.append(image_id)
             for m in methods:
                 dets[m].append(detector(preprocess(m, x, strengths)))
@@ -152,25 +177,26 @@ def load_set(args, key):
         return pickle.load(f)
 
 
-def analyze(specs, coco, real, args, methods) -> None:
+def analyze(specs, sources, real, args, methods) -> None:
     data = {s["key"]: load_set(args, s["key"]) for s in specs}
-    clean = data["coco__clean"]
-    assert clean["ids"] == [s.image_id for s in coco], "clean set does not match the COCO sample"
-    gt = {"coco": ([s.boxes for s in coco], [s.labels for s in coco])}
+    gt = {base: ([s.boxes for s in v], [s.labels for s in v]) for base, v in sources.items()}
     gt.update({k: ([s.boxes for s in v], [s.labels for s in v]) for k, v in real.items()})
-    for k in real:
-        assert data[k]["ids"] == [s.image_id for s in real[k]], f"{k} does not match its loader"
+    for spec in specs:
+        expected = real[spec["key"]] if spec["kind"] == "real" else sources[spec["base"]]
+        assert data[spec["key"]]["ids"] == [s.image_id for s in expected], f"{spec['key']} does not match its loader"
 
-    # Content-survival threshold, from how far the physics effects move CLIP embeddings.
-    sims = {k: (d["clip"] * clean["clip"]).sum(1) for k, d in data.items()
-            if k.startswith("coco__") and k != "coco__clean"}
-    physics_sims = np.concatenate([v for k, v in sims.items() if "__physics_" in k])
+    # CLIP similarity of every synthetic set to its own clean source; the content-survival
+    # threshold comes from how far the physics effects move COCO embeddings.
+    base_of = {s["key"]: s.get("base") for s in specs}
+    sims = {k: (d["clip"] * data[f"{base_of[k]}__clean"]["clip"]).sum(1) for k, d in data.items()
+            if base_of[k] and not k.endswith("__clean")}
+    physics_sims = np.concatenate([v for k, v in sims.items() if k.startswith("coco__physics_")])
     threshold = float(np.percentile(physics_sims, 5)) if args.clip_threshold is None else args.clip_threshold
     print(f"CLIP content threshold {threshold:.3f}"
           f" ({'5th percentile of physics similarity' if args.clip_threshold is None else 'given'})")
 
     def matches(key, method, idx=None):
-        boxes, labels = gt["coco"] if key.startswith("coco__") else gt[key]
+        boxes, labels = gt[base_of[key]] if base_of[key] else gt[key]
         dets = data[key]["dets"][method]
         if idx is not None:
             boxes, labels, dets = [boxes[i] for i in idx], [labels[i] for i in idx], [dets[i] for i in idx]
@@ -184,11 +210,13 @@ def analyze(specs, coco, real, args, methods) -> None:
             variants.append(("kept", np.where(sims[key] >= threshold)[0]))
         for variant, idx in variants:
             none_m, _ = matches(key, "none", idx)
-            ref = matches("coco__clean", "none", idx)[0] if spec["kind"] in ("physics", "generative") else None
+            synthetic = spec["kind"] not in ("clean", "real")
+            ref = matches(f"{spec['base']}__clean", "none", idx)[0] if synthetic else None
             for m in methods:
                 per, (boxes, labels, dets) = matches(key, m, idx)
                 value, low, high = bootstrap_map50(per, args.n_boot, args.seed)
-                row = {"set": key, "kind": spec["kind"], "effect": spec.get("effect", spec["kind"]),
+                row = {"set": key, "kind": spec["kind"], "source": spec.get("base", key.split("__")[0]),
+                       "effect": spec.get("effect", spec["kind"]),
                        "condition": spec["condition"], "level": spec["level"], "variant": variant, "method": m,
                        "images": len(boxes), "boxes": int(sum(len(b) for b in boxes)),
                        "map50": value, "map50_low": low, "map50_high": high,
@@ -199,7 +227,7 @@ def analyze(specs, coco, real, args, methods) -> None:
                 if m != "none":
                     g, gl, gh = bootstrap_map50(per, args.n_boot, args.seed, reference=none_m)
                     row.update(gain_vs_none=g, gain_low=gl, gain_high=gh)
-                if spec["kind"] in ("physics", "generative"):
+                if synthetic:
                     row["clip_sim"] = float(np.mean(sims[key] if idx is None else sims[key][idx]))
                 rows.append(row)
                 if m == "none":
@@ -237,7 +265,8 @@ def analyze(specs, coco, real, args, methods) -> None:
                 prof = profiles[(spec["key"], variant)]
                 cls = [c for c in CLASSES if not np.isnan(real_prof[c]) and not np.isnan(prof[c])]
                 pred_rows.append({
-                    "real": real_key, "kind": spec["kind"], "effect": spec.get("effect", spec["key"]),
+                    "real": real_key, "kind": spec["kind"], "source": spec.get("base", spec["key"].split("__")[0]),
+                    "effect": spec.get("effect", spec["key"]),
                     "level": spec["level"], "variant": variant,
                     "images": int(s.loc[(spec["key"], variant, "none"), "images"]),
                     "map50": none, "real_map50": mapv(real_key, "all", "none"),
@@ -246,7 +275,8 @@ def analyze(specs, coco, real, args, methods) -> None:
                     "baseline_signs": int((np.sign(gain) == np.sign(real_gain)).sum()),
                     "same_best": best == real_best, "best": best, "real_best": real_best,
                     "kid_to_real_x1000": float(kid_df.loc[(real_key, spec["key"])]),
-                    "clean_kid_to_real_x1000": float(kid_df.loc[(real_key, "coco__clean")]),
+                    "clean_kid_to_real_x1000": float(kid_df.loc[(real_key, f"{spec.get('base', 'coco')}__clean")])
+                    if spec["kind"] != "real" else float("nan"),
                 })
     predict = pd.DataFrame(pred_rows)
 
@@ -255,9 +285,9 @@ def analyze(specs, coco, real, args, methods) -> None:
     predict.to_csv(args.out / "predict.csv", index=False)
     kid_df.reset_index().to_csv(args.out / "kid.csv", index=False)
     (args.out / "headline.json").write_text(json.dumps({
-        "coco_images": len(coco), "real_images": {k: len(v) for k, v in real.items()},
+        "source_images": {k: len(v) for k, v in sources.items()}, "real_images": {k: len(v) for k, v in real.items()},
         "clip_threshold": threshold, "n_boot": args.n_boot, "model": args.model, "methods": methods,
-        "clean_map50": float(mapv("coco__clean", "all", "none")),
+        "clean_map50": {b: float(mapv(f"{b}__clean", "all", "none")) for b in sources},
     }, indent=2))
     with pd.option_context("display.width", 250, "display.max_rows", 500):
         cols = ["set", "variant", "images", "map50", "map50_low", "map50_high", "drop_vs_clean", "clip_sim"]
@@ -271,6 +301,8 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--generative", type=Path, default=DATA_DIR / "generative" / "coco")
     parser.add_argument("--real", nargs="+", default=["xwod", "dawn"], choices=["xwod", "dawn"])
+    parser.add_argument("--carla", type=Path, default=DATA_DIR / "carla",
+                        help="CARLA frames from record_carla_weather.py; skipped when missing")
     parser.add_argument("--baselines", nargs="*", default=list(BASELINES), choices=list(BASELINES))
     parser.add_argument("--strengths", type=Path, default=RESULTS_DIR / "tuning" / "strengths.json")
     parser.add_argument("--model", default="detr")
@@ -287,11 +319,17 @@ def main() -> None:
     real = load_real(args.real)
     methods = ["none"] + [f"baseline:{b}" for b in args.baselines]
     strengths, _ = load_strengths(args.strengths)
-    specs = set_specs(coco, real, args)
+    sources, carla = {"coco": coco}, None
+    if (args.carla / "manifest.csv").exists():
+        sources["carla"] = load_carla(args.carla)
+        carla = {"weather": {(c, lv): {s.image_id: s.path for s in load_carla(args.carla, c, lv)}
+                             for c in CONDITIONS for lv in LEVELS}}
+        print(f"CARLA: {len(sources['carla'])} scenes")
+    specs = set_specs(coco, carla, real, args)
     if args.stage in ("all", "detect"):
-        detect(specs, coco, real, args, methods, strengths)
+        detect(specs, sources, real, args, methods, strengths)
     if args.stage in ("all", "analyze"):
-        analyze(specs, coco, real, args, methods)
+        analyze(specs, sources, real, args, methods)
 
 
 if __name__ == "__main__":
