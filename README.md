@@ -381,9 +381,12 @@ python scripts/run_generative_diagnostic.py                           # classifi
 python scripts/run_degradation_compare.py                             # physics vs generative vs real, one detector
 python scripts/prepare_virada.py                                      # labelled VIRADA frames (range requests, ~9 MB kept)
 python scripts/train_weather_detector.py                              # clean / rain / dust RF: synthetic vs real training
+
+# CARLA testbed (needs a running CARLA 0.9.16 server; see CARLA.md)
+python scripts/record_carla_weather.py --scenes 300                   # paired clean / rain / dust frames, boxes, depth
 ```
 
-Weather-track data lives under `data/` and is git-ignored: `data/dawn/` (DAWN, Mendeley 10.17632/766ygrbt8y.3, CC BY-NC 3.0), `data/xwod/` (XWOD v1.1, Kaggle, CC BY-NC-SA 4.0, no redistribution), `data/coco/` (COCO val2017 images + `annotations/instances_val2017.json` from images.cocodataset.org), `data/virada/` (sampled frames, Zenodo 4715681, CC BY 4.0) and `data/generative/` (edits made by the scripts above).
+Weather-track data lives under `data/` and is git-ignored: `data/dawn/` (DAWN, Mendeley 10.17632/766ygrbt8y.3, CC BY-NC 3.0), `data/xwod/` (XWOD v1.1, Kaggle, CC BY-NC-SA 4.0, no redistribution), `data/coco/` (COCO val2017 images + `annotations/instances_val2017.json` from images.cocodataset.org), `data/virada/` (sampled frames, Zenodo 4715681, CC BY 4.0) `data/generative/` (edits made by the scripts above) and `data/carla/` (CARLA recordings).
 
 Useful flags (every script takes `--help`):
 
