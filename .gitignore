@@ -36,6 +36,7 @@ data/virada/
 data/coco/
 data/generative/
 data/carla/
+data/carla_ego/
 
 # Large pipeline outputs (summaries, figures and SUMMARY.md stay tracked)
 results/*/records.csv.gz

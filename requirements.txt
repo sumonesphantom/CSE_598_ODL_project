@@ -15,6 +15,7 @@ tqdm
 pyyaml               # YOLO data.yaml (XWOD)
 diffusers>=0.30      # InstructPix2Pix (generative weather)
 accelerate           # diffusers model loading
+einops               # Restormer (vendored, learned weather repair)
 jupyter
 nbclient
 pytest
