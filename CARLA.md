@@ -135,6 +135,11 @@ estimation errors are not a meaningful weakness of the physics filters.
 - CARLA dust is grey fog, not dust (see above); a mod with coloured fog, or CARLA 0.10 (Unreal
   Engine 5), may do better
 - Ubuntu 24.04 is not officially supported by CARLA 0.9.16; it ran headless without problems here
+- Found later (DRIVING.md): the recorder reused one Traffic Manager across towns, and a Traffic
+  Manager keeps the road map of the first town it served. In the towns recorded after Town10HD,
+  some vehicles therefore drove onto sidewalks or into each other before being frozen. Boxes,
+  depth and camera geometry are unaffected, but those scenes show less natural traffic. The
+  car recorder (record_ego_drive.py) uses a fresh Traffic Manager per town
 
 ## Reproduce
 
