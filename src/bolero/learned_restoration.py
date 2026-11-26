@@ -193,6 +193,8 @@ class InstructIR(_Learned):
 
 
 REPAIRERS = ("none", "autocontrast", "dcp_dehaze", "restormer_derain", "instructir_derain", "instructir_dehaze")
+# Trained in this project (task_repair.py); kept out of REPAIRERS so the Phase 2 runs stay as they were.
+TRAINED_REPAIRERS = ("task_repair",)
 
 
 def build(name: str, device=None, max_side: int | None = None):
@@ -207,4 +209,8 @@ def build(name: str, device=None, max_side: int | None = None):
         return RestormerDerain(device, max_side)
     if name.startswith("instructir_"):
         return InstructIR(name.split("_", 1)[1], device, max_side)
+    if name == "task_repair":
+        from .task_repair import TaskRepair
+
+        return TaskRepair(device=device)
     raise ValueError(f"unknown repairer {name!r}; choose from {REPAIRERS}")
