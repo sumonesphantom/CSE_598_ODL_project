@@ -385,15 +385,20 @@ python scripts/train_weather_detector.py                              # clean / 
 # CARLA testbed (needs a running CARLA 0.9.16 server; see CARLA.md)
 python scripts/record_carla_weather.py --scenes 300                   # paired clean / rain / dust frames, boxes, depth
 
-# Driving study, Phases 1-2: the algorithm on a car's camera (see DRIVING.md)
+# Driving study, Phases 1-4: the algorithm on a car's camera (see DRIVING.md)
 python scripts/record_ego_drive.py                                    # car-camera drives: frames, boxes, distances, depth
 python scripts/run_car_routing.py                                     # weather routing over time
 python scripts/run_car_perception.py                                  # weather damage, repairs, routed pipeline, isolation
 python scripts/run_car_real_check.py                                  # the same repairs on real photos
 python scripts/run_car_live.py --benchmark                            # stage timings; --seconds 90 for a live drive + video
+python scripts/train_task_repair.py                                   # learned repair in front of the frozen detector (~20 min)
+python scripts/run_car_repair.py                                      # choose the repairs on real photos; check on car frames (v1, v2)
+python scripts/run_car_scenarios.py --stage check                     # driving agent with ground-truth perception at every location
+python scripts/run_car_scenarios.py                                   # collision experiment (~4.5 h, resumable), then analysis
+python scripts/run_car_scenarios.py --stage demo --demo-runs RUN_ID ... # re-drive runs with video, side by side
 ```
 
-Weather-track data lives under `data/` and is git-ignored: `data/dawn/` (DAWN, Mendeley 10.17632/766ygrbt8y.3, CC BY-NC 3.0), `data/xwod/` (XWOD v1.1, Kaggle, CC BY-NC-SA 4.0, no redistribution), `data/coco/` (COCO val2017 images + `annotations/instances_val2017.json` from images.cocodataset.org), `data/virada/` (sampled frames, Zenodo 4715681, CC BY 4.0) `data/generative/` (edits made by the scripts above) `data/carla/` (CARLA traffic-camera recordings) and `data/carla_ego/` (CARLA car-camera drives). Repair-model weights (Restormer, InstructIR) download to `data/cache/restoration/` on first use from the authors' releases and are hash-checked; their model code is vendored in `src/bolero/third_party/` (MIT).
+Weather-track data lives under `data/` and is git-ignored: `data/dawn/` (DAWN, Mendeley 10.17632/766ygrbt8y.3, CC BY-NC 3.0), `data/xwod/` (XWOD v1.1, Kaggle, CC BY-NC-SA 4.0, no redistribution), `data/coco/` (COCO val2017 images + `annotations/instances_val2017.json` from images.cocodataset.org), `data/virada/` (sampled frames, Zenodo 4715681, CC BY 4.0) `data/generative/` (edits made by the scripts above) `data/carla/` (CARLA traffic-camera recordings) and `data/carla_ego/` (CARLA car-camera drives). Repair-model weights (Restormer, InstructIR) download to `data/cache/restoration/` on first use from the authors' releases and are hash-checked; their model code is vendored in `src/bolero/third_party/` (MIT). The learned repair's weights (`data/cache/restoration/task_repair.pt`, 1 MB) are made by `train_task_repair.py`, not downloaded.
 
 Useful flags (every script takes `--help`):
 

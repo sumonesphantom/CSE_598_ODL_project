@@ -1,11 +1,18 @@
-# Driving study: the algorithm on a car's camera (Phases 1-2 of 6)
+# Driving study: the algorithm on a car's camera
 
-Aravind, 2026-11-25. Goal of the whole study: our algorithm runs on a car's camera. Rain or dust
-corrupts what the camera sees. The algorithm recognizes the weather, repairs the frame and hands
-the car the objects that matter (what is in its path, how far away), so the car drives more
-safely. This document covers Phases 1 and 2: the car, its weathered camera and the algorithm
-running on it. Phases 3-6 (a driving agent that brakes on what we detect, scenarios, the
-collision experiment, a real dashcam check) are not done yet.
+Aravind, 2026-11-25 to 2026-11-26. Goal of the study: our algorithm runs on a car's camera. Rain
+or dust corrupts what the camera sees. The algorithm recognizes the weather, repairs the frame and
+hands the car the objects that matter (what is in its path, how far away), so the car drives more
+safely. This document covers:
+
+- Phase 1: the car and its weathered camera;
+- Phase 2: the algorithm running on it;
+- the repair stage, redone;
+- Phase 3: a driving agent and four hazard scenarios;
+- Phase 4: the collision experiment;
+- Phase 6: the statistics and a demo video.
+
+Phase 5 (a real dashcam check) was skipped (see the conclusions).
 
 **Short version.**
 - Weather on the car's camera hurts detection a lot (mAP50 -0.20 to -0.44), so the setup can
@@ -17,11 +24,20 @@ collision experiment, a real dashcam check) are not done yet.
   with 99.9 % of frames under 100 ms.
 - Isolation works. About 9 in 10 objects it flags as "in the car's path" really are, and the
   distances it estimates from the camera alone are off by about 10 % (median).
-- **The repair step is the weak link.** In simulation, dehazing recovers a lot under dust
-  (+0.07 to +0.14 of in-path objects found). On real dust photos it does not help, and slightly
-  hurts. Nothing helps much on rain in either. The simulator's dust is the same scattering model
-  the dehazer inverts, so the simulated gain is optimistic. Before Phase 4 can show that the car
-  drives more safely in real weather, the repair needs a method that helps on real photos.
+- **The repair step is the weak link.**
+  - The first simulated dust was exactly the haze model that dehazing inverts, so simulation
+    flattered that repair. It was replaced by a camera model that is harder to undo (weather v2).
+  - A repair network was trained through the frozen detector on real weather photos.
+  - Even so, **no repair reliably improves detection on real rain or dust photos**. Every
+    test-set interval includes zero except one tiny gain.
+- **Driving (736 simulated runs).**
+  - With perfect perception the car never crashes.
+  - With the car's detector and no repair it crashes in 29 % of the weather runs, all of them in
+    heavy rain mist or a dust storm.
+  - The algorithm lowers that to 27 % (-2.5 percentage points, 95 % CI [-5.4, +0.4]: not
+    significant).
+  - It clearly helps in moderate rain mist (crashes 58 % → 29 %), causes 3 crashes in light rain
+    streaks, never brakes falsely and never harms clean driving.
 
 ## Phase 1: the car and its weather
 
@@ -184,19 +200,235 @@ The route matched the true weather on 94 % of frames. `results/car_live/live.mp4
 weathered camera view beside the repaired view with the isolated objects (red = in the path,
 thick = most critical).
 
-## What this means for Phases 3-6
+## The repair, redone
 
-- The car, the weather, routing, isolation and real-time speed are ready for the driving
-  experiment
-- With today's repairs, a CARLA driving test would likely show the algorithm helping in dust.
-  That result would not carry over to real dust (see the real-photo check). Two options before
-  Phase 4:
-  1. Find or train a repair that helps on real dust and rain photos (e.g. fine-tune InstructIR
-     or a dehazer on XWOD / DAWN-style real data), and keep the physics weather for simulation
-  2. Make the simulated weather less "invertible" (dust that is not a uniform scattering
-     haze: uneven density, particles, colour variation) so simulation is not tuned to the repair
-- Phase 5 (real dashcam weather, e.g. ACDC, which needs a free registration) becomes more
-  important: it is the check that decides whether a repair is credited
+Phase 2 ended with two problems. First, the simulated dust (v1) is exactly the haze model that
+dark-channel dehazing inverts, so simulation flattered that repair. Second, no repair helped on
+real dust photos. Both are addressed here, before any driving.
+
+### Weather v2: a camera that is harder to undo (`bolero.ego.weather_v2`)
+
+- **Dust** is no longer one uniform haze:
+  - Visibility is set in metres (200 / 90 / 45 m for levels 1-3; 0.6 times that in a dust
+    storm), and the extinction comes from CARLA's metric depth.
+  - Density is uneven. A slowly drifting plume field scales it by 0.4 to 1.6 across the frame,
+    and in a live drive it moves with time.
+  - The haze colour depends on the sky (brighter and yellower towards the horizon and the sun),
+    so there is no single airlight to estimate.
+  - Light scattered forwards blurs distant objects.
+  - A dust storm adds blowing grains.
+- **Rain** keeps the v1 effects.
+- **Every frame, clean ones included,** then goes through a camera stage: shot and read noise,
+  then JPEG at quality 75, as a real camera would.
+
+Under v2, dehazing no longer gets a free win on dust. On the held-out car frames, averaged over
+dust levels 1-3, it adds +0.097 in-path recall under v1 but +0.008 under v2.
+
+### A repair learned for the detector (`bolero.task_repair`, `scripts/train_task_repair.py`)
+
+- **The network.** It is a small residual U-Net (267k parameters) with a global per-channel gain
+  and offset. Its output layers start at zero, so before training it is exactly the identity.
+- **Training.** It sits in front of the car's frozen Mask R-CNN and is trained to lower that
+  detector's own loss. The detector never changes: all its weights are frozen and its batch-norm
+  statistics are fixed. Only the preprocessing step is learned, so the project's rule of not
+  retraining the recognizer holds.
+- **Data.** Real XWOD training photos of rain and dust (586), mixed in every batch with 383 clean
+  COCO street photos. A squared penalty on changing the clean photos (weight 10) and a smaller one
+  on changing the weather photos (weight 1) keep it from harming the detector.
+- **Model selection.** The checkpoint is chosen on the XWOD validation split. The best is at step
+  2,500: +0.011 mAP50 on rain and +0.012 on dust, and +0.003 on held-out clean COCO.
+- **Speed.** 14 ms per 720p frame in fp16, so it fits the real-time budget.
+
+### Choosing the repair on real photos (`scripts/run_car_repair.py`)
+
+The repair for each condition is now chosen on the **XWOD validation split (real photos)** and
+then tested, untouched, on the XWOD test split, on DAWN (a different dataset) and on 300 clean
+COCO photos. The table gives the change in Mask R-CNN mAP50 against no repair, with a 95 % image
+bootstrap interval:
+
+| | XWOD valid rain | XWOD valid dust | XWOD test rain | XWOD test dust | DAWN rain | DAWN dust | COCO clean |
+|---|---|---|---|---|---|---|---|
+| no repair (mAP50) | 0.690 | 0.410 | 0.390 | 0.624 | 0.613 | 0.650 | 0.790 |
+| auto-contrast | +0.011 | -0.006 | +0.026 [-0.004, 0.042] | -0.005 | -0.011 | -0.004 | +0.000 |
+| dehazing | **+0.049** [0.007, 0.109] | -0.022 | +0.037 [-0.020, 0.094] | -0.046 [-0.094, 0.002] | -0.025 | -0.013 | +0.003 |
+| Restormer | +0.013 | +0.004 | +0.007 [0.002, 0.013] | +0.003 | -0.002 | -0.008 | +0.002 |
+| learned repair | +0.006 | **+0.011** [-0.007, 0.031] | +0.005 [-0.004, 0.018] | -0.007 [-0.029, 0.009] | -0.003 | -0.004 | +0.004 |
+| routed (chosen repairs) | | | -0.004 [-0.050, 0.038] | -0.018 [-0.068, 0.013] | -0.024 | -0.005 | +0.003 |
+
+- **Chosen on the validation split:** dehazing for rain and the learned repair for dust. That
+  choice is fixed for Phase 4, whatever the test photos say.
+- **The test photos do not confirm either choice.** Every interval includes zero except
+  Restormer's tiny gain on XWOD rain. The learned repair is the most even of the candidates
+  (within ±0.007 on every set and never harmful on clean photos), but it does not reliably help
+  either. In short, **no repair we have reliably improves detection on real rain or dust photos.**
+- **The router does well on DAWN but not on XWOD test.** It recognizes DAWN's rain and dust 96 %
+  and 91 % of the time, but XWOD test rain only 57 % of the time, and it sends 43 % of clean COCO
+  photos to the rain repair. That is harmless here (+0.003), because dehazing barely changes clean
+  photos.
+
+On the car frames (held-out towns, mean over weather levels 1-3), in-path recall:
+
+| | v1 dust | v2 dust | v1 rain | v2 rain | v2 clean |
+|---|---|---|---|---|---|
+| no repair | 0.538 | 0.555 | 0.534 | 0.510 | 0.830 |
+| dehazing | 0.634 | 0.562 | 0.581 | 0.535 | 0.875 |
+| learned repair | 0.562 | **0.570** | 0.543 | 0.524 | 0.841 |
+| Restormer | | 0.551 | | **0.609** | 0.830 |
+
+Restormer is the best repair for v2 rain, but at 0.1-1 s per frame it is too slow for the car
+(2.4), so it was not a candidate for driving.
+
+## Phase 3: a car that drives on what it sees
+
+### The driving agent (`bolero.driving`)
+
+The agent is deliberately simple and identical for every perception pipeline, so any difference
+in safety comes from perception alone.
+
+- **Steering** is pure pursuit along a route fixed at the start: points every 2 m along the
+  straightest way ahead, crossing junctions straight over. Perception plays no part in steering.
+- **Speed and braking.**
+  - The car cruises at 10 m/s (36 km/h).
+  - It brakes for the nearest object perception puts in its path, treating it as standing still.
+    The deceleration needed to stop 5 m short is a = v² / (2 (d - 5)).
+  - It brakes in proportion once that need passes 1 m/s², up to full braking (8 m/s²).
+- **Against flicker.** An object must appear in 2 perception frames in a row before the car
+  reacts. Once it has, the car remembers it for 0.5 s if it drops out of view.
+- **Timing.** Perception runs at 10 Hz, and its decision takes effect 0.1 s later, for every
+  pipeline including ground truth.
+
+### The scenarios (`scripts/run_car_scenarios.py`)
+
+The scenarios are staged in the two held-out towns (Town10HD, Town02), at 4 locations per town:
+straight road with at least 110 m clear ahead, with the hazard point outside any junction and
+next to a second lane. Nothing else moves.
+
+| scenario | what happens | what a safe car does |
+|---|---|---|
+| pedestrian_cross | a pedestrian 2 m beyond the right edge of the lane walks in (1.6 m/s) when the car is 35 m away, and stops in the middle of the lane | stops |
+| stopped_car | a car stands in the lane 70 m ahead | stops |
+| lead_brake | a car 30 m ahead at the same speed brakes at 6 m/s² to a stop, 3 s in | stops |
+| adjacent_car | a car stands in the next lane 70 m ahead | does **not** brake (false-braking check) |
+
+**Check with ground-truth perception** (`--stage check`): the car stops safely in all 24 hazard
+runs, 5.1 m short in almost all of them (it is designed to stop 5 m short), and drives past the
+adjacent car without braking in 7 of 8 locations. Its largest distance from the planned route
+was 3 cm.
+
+**A bug found on the way.** The first version steered towards the nearest map waypoint, found
+afresh every tick. Inside a junction that can be a turning lane, so at 2 of the 8 locations the
+car turned off its route and hit roadside objects, even with perfect perception. Those crashes
+would have been counted as perception failures. The route is now fixed at the start: at each
+branch, each option is followed 12 m ahead and the one that stays on the start's heading line is
+taken. Every run logs its largest distance from the route, and the analysis drops any location
+where a run strayed more than 1.5 m. The whole experiment was rerun after the fix.
+
+## Phase 4: does the car drive more safely?
+
+Every scenario at every location (2 towns × 4 locations × 4 scenarios) was driven under 11 weather
+variants: clean, plus each of the 5 weather effects at levels 2 and 3 (weather v2). Each variant
+was driven with each perception pipeline:
+
+- **ground truth**: CARLA's own object labels, blind to the weather. This is the upper bound.
+- **no repair**: the car's detector (Mask R-CNN) on the weathered frame.
+- **our algorithm**: the condition router, then the repair chosen for that condition (dehazing
+  for rain, the learned repair for dust, nothing for clean), then the detector.
+
+That is 736 runs (`results/car_scenarios/`). In "no repair" vs. "our algorithm" pairs, the
+scenario, location and weather are the same, so the comparison is paired. Intervals are 95 %
+bootstrap intervals over those pairs. No location had to be dropped: the car never strayed more
+than 6 cm from its route.
+
+### Collisions
+
+| crash rate | no repair | our algorithm | change [95 % CI] | crashes prevented / caused |
+|---|---|---|---|---|
+| clean (24 hazard runs) | 0 % | 0 % | 0 | 0 / 0 |
+| rain (144) | 26.4 % | 23.6 % | -2.8 pp [-7.6, +2.1] | 8 / 4 |
+| dust (96) | 33.3 % | 31.3 % | -2.1 pp [-5.2, 0.0] | 2 / 0 |
+| all weather (240) | 29.2 % | 26.7 % | -2.5 pp [-5.4, +0.4] | 10 / 4 |
+
+With ground-truth perception the car never crashes, under any weather (24 of 24 hazard runs
+safe, always about 5 m short). Every crash therefore comes from perception.
+
+By weather effect (hazard runs, levels 2 and 3 together, 48 pairs each):
+
+| effect | no repair | our algorithm | change [95 % CI] |
+|---|---|---|---|
+| rain streaks | 0 % | 6.3 % | **+6.3 pp [0, +14.6]**: 3 crashes caused |
+| rain mist | 79.2 % | 64.6 % | **-14.6 pp [-27.1, -4.1]**: 8 prevented, 1 caused |
+| raindrops on the lens | 0 % | 0 % | 0 |
+| dust haze | 0 % | 0 % | 0 |
+| dust storm | 66.7 % | 62.5 % | -4.2 pp [-10.4, 0] |
+
+- **Only heavy weather causes crashes.** Rain mist and dust storms cause them; light streaks,
+  lens drops and dust haze do not, even without repair. In those effects the detector still sees
+  the hazard in time, so the repair has nothing to win back.
+- **The one clear gain is in moderate rain mist.** At level 2, crashes fall from 58 % to 29 % (14
+  to 7 of 24). Rain mist is a haze-like veil, which dehazing (the repair chosen for rain) removes.
+  At level 3 both pipelines crash every time: the repair cannot recover enough.
+- **The algorithm causes crashes in light rain streaks** (3 of 48, all in Town10HD location 1).
+  The router correctly calls them rain and sends them to dehazing, which suits mist but not
+  streaks, and in those runs the detector lost the car ahead.
+- **Dust storms barely change** (2 prevented, none caused). The learned repair is mild by design.
+- **Where it crashes, it hits about as hard.** Mean impact speed among crashes is 27-28 km/h for
+  both pipelines, against a cruising speed of 36 km/h.
+- **By scenario:** in dust, almost all crashes are with the stopped car (47-50 %) and the braking
+  lead car (47 %); the pedestrian is hit in only 0-3 % of dust runs. In rain, the three hazards
+  are hit about equally often (19-27 %). The algorithm's gain is largest for the pedestrian
+  (rain: 27 % → 19 % crashes).
+
+### False braking
+
+In the adjacent-car scenario (a car in the next lane, which needs no braking), no pipeline
+stopped or crashed. Brief braking taps (about 0.1-0.35 s on average) happen in 4-12 % of runs for
+every pipeline, ground truth included, so the algorithm adds no false braking.
+
+### What Phase 4 shows
+
+**In simulation, the algorithm makes the car slightly safer overall, but not significantly**
+(-2.5 percentage points of crashes, interval [-5.4, +0.4]). It clearly helps in one condition
+(moderate rain mist), slightly harms in another (light rain streaks), and never harms clean
+driving. The pattern follows from the repair stage: routing and isolation work, but the repairs
+help only where the weather looks like what they undo. Combined with the real-photo results,
+where no repair reliably helps, the evidence does not support a claim that the algorithm makes a
+car safer in real rain or dust. What it does show is a working end-to-end pipeline, a measurable
+safety gain where the repair matches the weather, and that a mismatched repair can cost safety.
+
+### Demo video (`results/car_scenarios/demo/demo.mp4`)
+
+Five cases, each with the unrepaired car (left) beside the full algorithm (right), same scenario
+and weather. Each side shows the camera view with the objects found (red = in the car's path),
+and a title gives the run's outcome:
+
+1. Pedestrian crossing in rain mist (level 2), Town10HD: without repair the car hits the
+   pedestrian; with the algorithm it stops.
+2. Stopped car in a dust storm (level 2), Town02: the algorithm stops in time; no repair does not.
+3. Braking lead car in rain streaks (level 3), Town10HD: the algorithm causes the crash.
+4. Stopped car in heavy rain mist (level 3), Town10HD: both crash.
+5. Pedestrian crossing in clear weather, Town10HD: both stop.
+
+Re-render with `python scripts/run_car_scenarios.py --stage demo --demo-runs <run ids>`; add
+`--show` to watch the drive live, with CARLA's camera following the car.
+
+## Conclusions and what is not covered
+
+- **What works:** the car's camera, the weather, routing (85 % of frames correct, 9 % of clean
+  frames sent to a repair), isolation (about 90 % precise, about 10 % distance error) and
+  real-time speed (16 frames/s). In simulation the whole loop runs: detect, route, repair, isolate,
+  brake.
+- **What does not yet:** the repair. No repair we tried, including one trained through the
+  detector on real weather photos, reliably improves detection on real rain or dust photos. In
+  the driving experiment the algorithm prevents crashes only where the repair matches the
+  weather (moderate rain mist), and the overall gain (-2.5 percentage points) is not
+  significant.
+- **Phase 5 (real dashcam photos, ACDC) was skipped** at the project's decision: it needs a
+  dataset registration, and the real-photo evidence already on hand (XWOD, DAWN) points the same
+  way. The real-world evidence is therefore from traffic-camera and web photos, not a car's
+  camera, and it is about detection only, not driving.
+- **The most promising next step** is a repair that is specific to the kind of weather, not only
+  its family. Dehazing helps mist but hurts streaks, so a router that separates mist from streaks
+  (or a repair that does both) would remove the crashes the algorithm causes today.
 
 ## Caveats
 
@@ -207,6 +439,12 @@ thick = most critical).
   and when the car brakes hard
 - The real-photo check uses traffic-camera and street photos (XWOD, DAWN), not dashcam footage
 - Ground-truth masks were not saved, so mask quality is not scored (boxes are)
+- The driving experiment covers 8 locations in 2 towns, one car speed (36 km/h), straight roads
+  and one hazard at a time, with nothing else moving. The driving agent is deliberately simple
+  (no tracking, so a moving lead car is treated as standing still). Intervals are over 24-48
+  paired runs per effect, so effects smaller than about 5 percentage points cannot be resolved
+- The demo video re-drives the chosen runs rather than replaying them. All 10 re-drives ended as
+  in the experiment (same crashes and safe stops)
 - Found on the way: one Traffic Manager reused across towns keeps the first town's road map and
   steers cars into buildings. The car recorder uses a fresh one per town. The traffic-camera set
   in CARLA.md was affected (see its caveats)
@@ -222,6 +460,11 @@ python scripts/run_car_perception.py               # 1.3, 2.2, 2.3; ~2 h of infe
 python scripts/run_car_real_check.py               # 2.2 on real photos, ~15 min
 python scripts/run_car_live.py --benchmark         # 2.4 stage timings and speed-setting check
 python scripts/run_car_live.py --seconds 90        # 2.4 live drive + video (needs CARLA)
+python scripts/train_task_repair.py                # learned repair, ~20 min on the GPU
+python scripts/run_car_repair.py                   # choose repairs on real photos, check on car frames, ~1.5 h
+python scripts/run_car_scenarios.py --stage check  # Phase 3: ground-truth driving at every location, ~4 min
+python scripts/run_car_scenarios.py                # Phase 4: 736 runs, ~5 h, resumable; then the analysis
+python scripts/run_car_scenarios.py --stage demo --show --demo-runs <run ids>   # demo video, watched live
 ```
 
 Repair weights download on first use from the authors' releases (Restormer GitHub release,
