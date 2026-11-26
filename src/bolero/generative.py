@@ -62,15 +62,39 @@ class WeatherEditor:
 
     @torch.no_grad()
     def __call__(self, image: Image.Image, condition: str, level: int, seed: int) -> Image.Image:
+        return self.edit(image, PROMPTS[condition], IMAGE_GUIDANCE[level], seed)
+
+    @torch.no_grad()
+    def edit(self, image: Image.Image, prompt: str, image_guidance: float, seed: int,
+             text_guidance: float = TEXT_GUIDANCE) -> Image.Image:
+        """One InstructPix2Pix edit at the SD resolution, resized back to the input size."""
         start = time.perf_counter()
         size = image.size
         work = image.convert("RGB").resize(edit_size(*size), Image.BICUBIC)
         generator = torch.Generator(self.device).manual_seed(seed)
-        out = self.pipe(PROMPTS[condition], image=work, num_inference_steps=self.steps,
-                        image_guidance_scale=IMAGE_GUIDANCE[level], guidance_scale=TEXT_GUIDANCE,
+        out = self.pipe(prompt, image=work, num_inference_steps=self.steps,
+                        image_guidance_scale=image_guidance, guidance_scale=text_guidance,
                         generator=generator).images[0]
         self.last_seconds = time.perf_counter() - start
         return out.resize(size, Image.BICUBIC)
+
+
+# Generative restoration: the same model asked to take the weather out again.
+REMOVE_PROMPTS = {"rain": "remove the rain", "dust": "remove the sandstorm and dust haze"}
+RESTORE_IMAGE_GUIDANCE = (1.5, 2.0)   # lower = stronger edit, as for degradation
+
+
+class WeatherRemover(WeatherEditor):
+    """InstructPix2Pix asked to remove rain or dust. The prompt is picked from the image's
+    known condition (oracle routing), so this measures the restorer, not the decider."""
+
+    def __init__(self, device: str | None = None, steps: int = STEPS, prompts: dict | None = None):
+        super().__init__(device, steps)
+        self.prompts = {**REMOVE_PROMPTS, **(prompts or {})}
+
+    def __call__(self, image: Image.Image, condition: str, image_guidance: float, seed: int,
+                 text_guidance: float = TEXT_GUIDANCE) -> Image.Image:
+        return self.edit(image, self.prompts[condition], image_guidance, seed, text_guidance)
 
 
 class ClipEmbedder:

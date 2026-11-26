@@ -107,7 +107,11 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
 - [ ] Add 2–3 published baselines as methods: a learned restorer (Restormer or NAFNet, plus DRSformer for rain) and test-time adaptation (TENT or MEMO)
 - [ ] Add a dust restorer: dark channel prior + color correction, then a model tuned on SIRB/SIEB
 - [ ] Add diffusion restorers (DiffBIR or StableSR) for rain/dust and SAM-masked inpainting (LaMa / SD-inpaint) for occlusion
+      - Built (Venkat, 2026-11-26), **waiting on a GPU run (Aravind)**: InstructPix2Pix asked to "remove the rain" / "remove the sandstorm and dust haze" (`WeatherRemover` in `src/bolero/generative.py`), prompt chosen from the image's known condition, edit strengths 1.5 / 2.0. `scripts/run_generative_restore.py` restores DAWN + XWOD test, runs frozen DETR on raw / auto-contrast / restored images and reports mAP50 change vs raw with a 95% paired bootstrap CI. DiffBIR / StableSR and inpainting are still open
+      - Pilot: `python scripts/run_generative_restore.py --limit 100` (~200 images x 2 strengths, ~20 min at ~3 s/edit). Full: drop `--limit` (~925 images, ~1.5 h). Restored images cache in `data/generative_restore/`, so a stopped run resumes
 - [ ] Measure hallucination: does restoration invent or change objects? Use agreement with the clean prediction, box changes, and conformal set size (with Venkat)
+      - Built (Venkat, 2026-11-26), same script, 6 tests: `src/bolero/hallucination.py` compares detections before vs after restoration at a 0.5 operating score: objects **lost** / **gained**, **invented** (new false positive where the raw image had no box), **relabeled**, false positives **cleared**, plus CLIP similarity to the raw image. Conformal set size is not included yet
+      - Rohith's restorers: save outputs as `<dir>/<dataset>/<condition>/<image_id>.png` and add `--external restormer=<dir>` (repeatable). `--rescore --threshold 0.3` re-scores from saved detections without a GPU
 - [ ] Reproduce the RID/RIS finding (deraining preprocessing vs raw rainy input) as a sanity check
 - [ ] Produce one results table: method × perturbation → accuracy, CE, latency
 - [ ] Extend the table to detection: method × {XWOD rain, XWOD dust, DAWN rain, DAWN sandstorm, RIS} → mAP50, coverage, latency

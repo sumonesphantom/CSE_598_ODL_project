@@ -56,3 +56,6 @@ __pycache__/
 results/*
 # Presentation decks (kept locally, not in the repo)
 progress presentation/
+docs/pipeline_status.html
+# Run notes sent to teammates (not in the repo)
+ARAVIND_RUN_STEPS.md
