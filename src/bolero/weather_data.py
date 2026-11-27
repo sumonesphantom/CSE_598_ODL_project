@@ -253,3 +253,39 @@ def load_coco(root: Path | None = None, n: int = 300, seed: int = 42, keep: tupl
                                        np.asarray([x for x, _ in b], np.float32).reshape(-1, 4),
                                        [c for _, c in b], im["width"], im["height"]))
     return samples
+
+
+def load_carla(root: Path | None = None, condition: str = "clean", level: int = 0,
+               towns: tuple[str, ...] | None = None) -> list[DetectionSample]:
+    """CARLA traffic-camera frames from scripts/record_carla_weather.py.
+
+    Every scene is rendered clean and under rain / dust levels 1-3 with all actors frozen, so the
+    boxes (from the clean frame's instance segmentation) hold for every condition. `image_id` is
+    the scene name, shared across conditions, so sets pair up image by image.
+    """
+    import json
+
+    import pandas as pd
+
+    root = Path(root or DATA_DIR / "carla")
+    manifest = root / "manifest.csv"
+    if not manifest.exists():
+        raise FileNotFoundError(f"{manifest} not found; record frames with scripts/record_carla_weather.py")
+    m = pd.read_csv(manifest)
+    m = m[(m["condition"] == condition) & (m["level"] == level)]
+    if towns:
+        m = m[m["town"].isin(towns)]
+    samples = []
+    for row in m.sort_values("scene").itertuples():
+        lab = json.loads((root / "labels" / f"{row.scene}.json").read_text())
+        samples.append(DetectionSample(row.scene, Path(row.path), "carla", condition,
+                                       np.asarray(lab["boxes"], np.float32).reshape(-1, 4), list(lab["labels"]),
+                                       lab["width"], lab["height"]))
+    return samples
+
+
+def carla_depth(root: Path, scene: str) -> np.ndarray:
+    """CARLA ground-truth depth in metres for a scene (saved as 16-bit centimetres)."""
+    import cv2
+
+    return cv2.imread(str(Path(root) / "depth" / f"{scene}.png"), cv2.IMREAD_UNCHANGED).astype(np.float32) / 100.0

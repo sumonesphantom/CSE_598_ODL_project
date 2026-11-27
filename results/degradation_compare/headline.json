@@ -1,0 +1,25 @@
+{
+  "source_images": {
+    "coco": 300,
+    "carla": 287
+  },
+  "real_images": {
+    "xwod__rain": 258,
+    "xwod__dust": 145,
+    "dawn__rain": 200,
+    "dawn__dust": 323
+  },
+  "clip_threshold": 0.6038066744804382,
+  "n_boot": 500,
+  "model": "detr",
+  "methods": [
+    "none",
+    "baseline:unsharp",
+    "baseline:autocontrast",
+    "baseline:clahe"
+  ],
+  "clean_map50": {
+    "coco": 0.7080769584877262,
+    "carla": 0.5113833247271433
+  }
+}

@@ -27,6 +27,8 @@ SEGMENTERS = {
     "detr": "facebook/detr-resnet-50",
 }
 DEPTH_MODEL = "depth-anything/Depth-Anything-V2-Small-hf"
+# Text-prompted segmentation: picks *which* region is the entity (see segmentation.TextSegmenter).
+TEXT_SEGMENTER = "CIDAS/clipseg-rd64-refined"
 
 IMAGENETTE_VERSIONS = {
     "160": "https://s3.amazonaws.com/fast-ai-imageclas/imagenette2-160.tgz",

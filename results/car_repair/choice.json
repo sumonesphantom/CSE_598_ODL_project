@@ -1,0 +1,15 @@
+{
+  "repairers": {
+    "clean": "none",
+    "rain": "dcp_dehaze",
+    "dust": "task_repair"
+  },
+  "chosen_on": "XWOD validation split (real photos), mAP50",
+  "candidates": [
+    "none",
+    "autocontrast",
+    "dcp_dehaze",
+    "restormer_derain",
+    "task_repair"
+  ]
+}

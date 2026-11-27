@@ -1,0 +1,40 @@
+pred_label,count,share_of_failures
+monastery,145,0.5123674911660777
+"bell cote, bell cot",31,0.10954063604240283
+vault,21,0.07420494699646643
+altar,18,0.0636042402826855
+castle,10,0.0353356890459364
+palace,10,0.0353356890459364
+"beacon, lighthouse, beacon light, pharos",7,0.024734982332155476
+boathouse,5,0.0176678445229682
+fountain,2,0.007067137809187279
+"flagpole, flagstaff",2,0.007067137809187279
+"worm fence, snake fence, snake-rail fence, Virginia fence",2,0.007067137809187279
+"lakeside, lakeshore",2,0.007067137809187279
+"organ, pipe organ",2,0.007067137809187279
+"airship, dirigible",1,0.0035335689045936395
+"maze, labyrinth",1,0.0035335689045936395
+volcano,1,0.0035335689045936395
+"sandbar, sand bar",1,0.0035335689045936395
+yawl,1,0.0035335689045936395
+monitor,1,0.0035335689045936395
+"home theater, home theatre",1,0.0035335689045936395
+golf ball,1,0.0035335689045936395
+"promontory, headland, head, foreland",1,0.0035335689045936395
+"solar dish, solar collector, solar furnace",1,0.0035335689045936395
+water tower,1,0.0035335689045936395
+"megalith, megalithic structure",1,0.0035335689045936395
+"seashore, coast, seacoast, sea-coast",1,0.0035335689045936395
+"limousine, limo",1,0.0035335689045936395
+"restaurant, eating house, eating place, eatery",1,0.0035335689045936395
+alp,1,0.0035335689045936395
+"mobile home, manufactured home",1,0.0035335689045936395
+"book jacket, dust cover, dust jacket, dust wrapper",1,0.0035335689045936395
+"prison, prison house",1,0.0035335689045936395
+dome,1,0.0035335689045936395
+comic book,1,0.0035335689045936395
+"drilling platform, offshore rig",1,0.0035335689045936395
+"theater curtain, theatre curtain",1,0.0035335689045936395
+pier,1,0.0035335689045936395
+steam locomotive,1,0.0035335689045936395
+mosque,1,0.0035335689045936395

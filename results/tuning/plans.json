@@ -1,0 +1,14 @@
+{
+  "plans": {
+    "background_removal": "pass_through",
+    "boundary_erase": "pass_through",
+    "foreground_occlusion": "pass_through",
+    "gaussian_noise": "bilateral",
+    "region_removal": "pass_through"
+  },
+  "split": "train",
+  "images": 200,
+  "per_class": 20,
+  "seed": 42,
+  "min_gain_pp": 0.5
+}

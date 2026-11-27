@@ -17,6 +17,7 @@ diffusers>=0.30      # InstructPix2Pix (generative weather)
 accelerate           # diffusers model loading
 fastapi              # app/ live demo
 uvicorn              # app/ live demo
+einops               # Restormer (vendored, learned weather repair)
 jupyter
 nbclient
 pytest
