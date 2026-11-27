@@ -65,6 +65,13 @@ progress presentation/
 !results/car_scenarios/
 results/car_scenarios/demo/*
 !results/car_scenarios/demo/demo.mp4
+results/car_scenarios/demo_depth/*
+!results/car_scenarios/demo_depth/demo_h264.mp4
+!results/car_scenarios/demo_depth/runs.csv
+results/car_scenarios/demo_depth_all/*
+!results/car_scenarios/demo_depth_all/demo_h264.mp4
+!results/car_scenarios/demo_depth_all/demo_3way_h264.mp4
+!results/car_scenarios/demo_depth_all/runs.csv
 results/car_scenarios/all/
 !results/car_live/
 !results/car_routing/

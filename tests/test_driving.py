@@ -105,3 +105,15 @@ def test_route_target_and_run_ids():
     assert parse_run_id("Town02_Opt_L0_lead_brake_clean0_gt") == ("Town02_Opt", 0, "lead_brake", "clean", 0, "gt")
     with pytest.raises(ValueError):
         parse_run_id("Town02_Opt_L0_unknown_clean0_gt")
+
+
+def test_depth_warning_alone_brakes_gently():
+    p = BrakePolicy()
+    warn = {"distance": 12.0, "in_path": True, "source": "depth"}
+    p.observe([warn], 0.1, 10.0)
+    assert p.observe([warn], 0.1, 10.0) == 12.0 and not p.strong          # confirmed, depth only
+    _, gentle = p.control(10.0, 12.0, p.strong)
+    assert gentle == pytest.approx(p.warn_cap)
+    p.observe([warn, {"distance": 11.5, "in_path": True}], 0.1, 10.0)        # the detector agrees
+    assert p.strong
+    assert p.control(10.0, 11.5, p.strong)[1] > p.warn_cap

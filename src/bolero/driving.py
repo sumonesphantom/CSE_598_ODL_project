@@ -15,6 +15,11 @@ difference in safety between runs comes from perception alone:
 
 Perception runs at 10 Hz and the decision it leads to is applied `latency` seconds later, the
 same for every pipeline, including the ground-truth one.
+
+Objects may carry a `source`. One reported only by the depth obstacle warning (source "depth",
+bolero.car_depth) is a weaker signal than a detection, so braking for it alone is capped at
+`warn_cap` of full braking (a gentle, early slow-down); as soon as the detector also reports an
+object in the path, full braking is allowed again.
 """
 
 from __future__ import annotations
@@ -32,37 +37,42 @@ class BrakePolicy:
     max_decel: float = 8.0         # m/s^2 at full brake (CARLA Lincoln MKZ, dry road)
     confirm: int = 2               # consecutive perception frames before reacting
     memory: float = 0.5            # s an object is remembered after it drops out
+    warn_cap: float = 0.4          # brake fraction allowed for a depth-warning-only object (~3 m/s^2)
     streak: int = 0
+    strong: bool = True            # the reacted-to object is backed by the detector (not depth alone)
     held: float | None = None      # remembered distance of the nearest in-path object
     held_age: float = 0.0
     log: list = field(default_factory=list)
 
     def reset(self):
-        self.streak, self.held, self.held_age = 0, None, 0.0
+        self.streak, self.held, self.held_age, self.strong = 0, None, 0.0, True
 
     def observe(self, objects: list[dict], dt_since_last: float, speed: float) -> float | None:
         """Update with one perception frame; returns the distance the car reacts to (or None)."""
         path = [o["distance"] for o in objects if o["in_path"]]
+        detected = any(o["in_path"] and o.get("source", "detector") != "depth" for o in objects)
         if self.held is not None:
             self.held -= speed * dt_since_last
             self.held_age += dt_since_last
         if path:
             self.streak += 1
             if self.streak >= self.confirm:
-                self.held, self.held_age = min(path), 0.0
+                self.held, self.held_age, self.strong = min(path), 0.0, detected
         else:
             self.streak = 0
             if self.held is not None and self.held_age > self.memory:
                 self.held = None
         return self.held
 
-    def control(self, speed: float, distance: float | None) -> tuple[float, float]:
-        """(throttle, brake) for the current speed and reacted-to distance."""
+    def control(self, speed: float, distance: float | None, strong: bool = True) -> tuple[float, float]:
+        """(throttle, brake) for the current speed and reacted-to distance; `strong` False caps the
+        brake at `warn_cap` (the object comes from the depth warning alone)."""
         if distance is not None:
             room = distance - self.margin
             need = np.inf if room <= 0.3 else speed ** 2 / (2.0 * room)
             if need >= self.comfort:
-                return 0.0, float(np.clip(need / self.max_decel, 0.15, 1.0)) if np.isfinite(need) else 1.0
+                brake = float(np.clip(need / self.max_decel, 0.15, 1.0)) if np.isfinite(need) else 1.0
+                return 0.0, brake if strong else min(brake, self.warn_cap)
             if room < 2.0 * speed:      # close but no braking needed yet: do not speed up
                 return 0.0, 0.0
         err = self.target_speed - speed

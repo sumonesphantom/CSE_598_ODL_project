@@ -25,6 +25,9 @@ bootstrap intervals over 10-second stretches (as in Phase 2); time per stage.
 Usage: python scripts/run_car_depth.py [--stage all|infer|analyze|tune-obstacle]
   tune-obstacle  choose the obstacle-warning settings on clean frames of the training towns
                  (writes obstacle_tuning.csv; the chosen values are fixed in OBSTACLE below)
+  tune-warning   cut the warning's false alarms: choose its filters on WEATHERED training-town
+                 frames (half resolution, as the car runs it), then check them once on the
+                 held-out frames (warning_tuning.csv, warning_validation.csv; fixed in WARNING)
 Outputs (in --out): summary.csv, by_level.csv, obstacle.csv, routing.csv, timing.csv, headline.json
 """
 
@@ -127,6 +130,108 @@ def tune_obstacle(args):
     out = pd.DataFrame(rows).assign(score=lambda r: r.found - r.false_warning).sort_values("score", ascending=False)
     out.to_csv(args.out / "obstacle_tuning.csv", index=False)
     print(out.head(10).round(3).to_string(index=False))
+
+
+# The obstacle warning as the car runs it: on the depth map at half resolution (640 x 360), with the
+# false-warning filters chosen by --stage tune-warning on weathered training-town frames.
+WARNING_CAMERA = CameraModel(640, 360, 90, 1.4, -2.0)
+WARNING = {"ratio": 0.8, "half_width": 1.5, "min_area": 25, "opening": 1, "scale": 0.65,
+           "min_distance": 6.0, "min_height": 0.8, "reject_bottom": False}
+
+
+def warning_maps(args, frames, router, repair, est):
+    """Half-resolution depth of the repaired frame for every frame x weather variant, plus the
+    nearest in-path object's true distance (None if nothing is in the path)."""
+    import cv2
+
+    out = []
+    for fid in tqdm(frames, desc="depth"):
+        img, depth, lab = load_frame(args.data, fid)
+        gt = min((o["distance"] for o in lab["objects"] if o["in_path"]), default=None)
+        for eff, lv in VARIANTS:
+            w = apply_weather(img, depth, eff, lv, fid, args.seed, model="v2")
+            route = route_rule(router, router_features(w))
+            x = repair[route](w) if route in repair else w
+            D = cv2.resize(est(x), (640, 360), interpolation=cv2.INTER_AREA).astype(np.float16)
+            fam = "clean" if eff == "clean" else WEATHER[eff].family
+            out.append({"frame": fid, "effect": eff, "level": lv, "family": fam, "gt": gt, "depth": D})
+    return out
+
+
+def warning_scores(recs, blobs_of, flt) -> dict:
+    """found: share of frames whose nearest path object is 8-40 m away that the warning finds
+    (within 30 %); false: share of frames with nothing in the path that get a warning."""
+    found = hz = false = near_false = nohz = 0
+    for r, blobs in zip(recs, blobs_of):
+        ok = [b for b in blobs if b["pixels"] >= flt["min_area"] and abs(b["lateral"]) < flt["half_width"]
+              and b["distance"] >= flt["min_distance"] and b["height"] >= flt["min_height"]
+              and not (flt["reject_bottom"] and b["at_bottom"]) and b["distance"] < 40.0]
+        warn = min((b["distance"] for b in ok), default=None)
+        if r["gt"] is None:
+            nohz += 1
+            false += warn is not None
+            near_false += warn is not None and warn < 15.0
+        elif 8.0 <= r["gt"] <= 40.0:
+            hz += 1
+            found += warn is not None and abs(warn - r["gt"]) / r["gt"] < DIST_TOL
+    return {"found": found / max(hz, 1), "false_warning": false / max(nohz, 1),
+            "near_false_warning": near_false / max(nohz, 1), "hazard_frames": hz, "frames_without_hazard": nohz}
+
+
+def warning_grid(args, frames, router, repair, est):
+    """Found / false-warning rates of every filter setting on weathered frames."""
+    import itertools
+
+    train = warning_maps(args, frames, router, repair, est)
+    rows, cands = [], {}
+    for ratio, half_width in itertools.product((0.7, 0.8), (1.0, 1.5, 2.0)):
+        ob = DepthObstacle(WARNING_CAMERA, ratio=ratio, half_width=half_width, min_area=25, opening=1, scale=0.65)
+        cands[(ratio, half_width)] = [ob.candidates(r["depth"].astype(np.float32))[0] for r in train]
+        for min_area, min_distance, min_height, reject_bottom in itertools.product(
+                (25, 50, 100), (0.0, 4.0, 6.0), (0.0, 0.4, 0.8, 1.2), (False, True)):
+            flt = {"ratio": ratio, "half_width": half_width, "min_area": min_area, "opening": 1, "scale": 0.65,
+                   "min_distance": min_distance, "min_height": min_height, "reject_bottom": reject_bottom}
+            rows.append({**flt, **warning_scores(train, cands[(ratio, half_width)], flt)})
+    return pd.DataFrame(rows)
+
+
+def tune_warning(args):
+    head = json.loads((RESULTS_DIR / "car_perception" / "headline.json").read_text())
+    router = PerturbationDetector.load(RESULTS_DIR / "weather_detector" / f"detector_{head['car_router']}.joblib")
+    choice = json.loads((RESULTS_DIR / "car_repair" / "choice.json").read_text())["repairers"]
+    repair = {fam: build(name) for fam, name in choice.items() if name != "none"}
+    est = DepthEstimator()
+    m = pd.read_csv(args.data / "manifest.csv")
+    idx = m.frame.str[-4:].astype(int)
+    grid_path = args.out / "warning_tuning.csv"
+    if args.reuse_grid and grid_path.exists():
+        grid = pd.read_csv(grid_path)
+    else:
+        grid = warning_grid(args, m[~m.town.isin(TEST_TOWNS) & (idx % 12 == 3)].frame.tolist(), router, repair, est)
+        grid.to_csv(grid_path, index=False)
+    # Choice: the most hazards found minus twice the false warnings (a false warning makes the car
+    # brake for nothing, so it counts double). A hard cap on false warnings left no useful setting.
+    best = grid.assign(score=grid.found - 2.0 * grid.false_warning).sort_values(
+        ["score", "found"], ascending=[False, False]).iloc[0]
+    flt = {k: (bool(best[k]) if k == "reject_bottom" else float(best[k]) if k not in ("min_area", "opening") else int(best[k]))
+           for k in WARNING}
+    print("chosen on the training towns:", flt, best[["found", "false_warning", "near_false_warning"]].round(3).to_dict())
+    # One check on the held-out frames (the step-B test frames), per weather family.
+    test = warning_maps(args, m[m.town.isin(TEST_TOWNS) & (idx % 5 == 0)].frame.tolist(), router, repair, est)
+    ob = DepthObstacle(WARNING_CAMERA, **{k: flt[k] for k in ("ratio", "half_width", "min_area", "opening", "scale")})
+    blobs = [ob.candidates(r["depth"].astype(np.float32))[0] for r in test]
+    val = []
+    for name, sel in [("all", lambda r: True)] + [(f, (lambda r, f=f: r["family"] == f)) for f in ("clean", "rain", "dust")] + \
+                     [(e, (lambda r, e=e: r["effect"] == e)) for e in WEATHER]:
+        idx_ = [i for i, r in enumerate(test) if sel(r)]
+        for label, f in (("without the new filters", {**flt, "min_distance": 0.0, "min_height": 0.0, "reject_bottom": False,
+                                                       "half_width": flt["half_width"]}), ("after", flt)):
+            val.append({"set": name, "warning": label, **warning_scores([test[i] for i in idx_], [blobs[i] for i in idx_], f)})
+    val = pd.DataFrame(val)
+    val.to_csv(args.out / "warning_validation.csv", index=False)
+    (args.out / "warning_choice.json").write_text(json.dumps(flt, indent=2))
+    with pd.option_context("display.width", 200):
+        print(val.round(3).to_string(index=False))
 
 
 def infer(args, frames):
@@ -305,7 +410,7 @@ def analyze(args, frames):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--stage", choices=("all", "infer", "analyze", "tune-obstacle"), default="all")
+    p.add_argument("--stage", choices=("all", "infer", "analyze", "tune-obstacle", "tune-warning"), default="all")
     p.add_argument("--data", type=Path, default=DATA_DIR / "carla_ego")
     p.add_argument("--alpha", type=float, default=0.05, help="conformal gate: share of clean frames allowed to be sent to a repair")
     p.add_argument("--sam-grid", type=int, default=16)
@@ -313,10 +418,14 @@ def main():
     p.add_argument("--seed", type=int, default=SEED)
     p.add_argument("--out", type=Path, default=RESULTS_DIR / "car_depth")
     p.add_argument("--limit", type=int, default=0, help="first N frames only (smoke test)")
+    p.add_argument("--reuse-grid", action="store_true", help="tune-warning: reuse warning_tuning.csv instead of recomputing it")
     args = p.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     if args.stage == "tune-obstacle":
         tune_obstacle(args)
+        return
+    if args.stage == "tune-warning":
+        tune_warning(args)
         return
     m = pd.read_csv(args.data / "manifest.csv")
     frames = m[(m.frame.str[-4:].astype(int) % 5 == 0) & m.town.isin(TEST_TOWNS)].reset_index(drop=True)

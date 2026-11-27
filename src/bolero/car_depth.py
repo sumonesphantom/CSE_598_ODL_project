@@ -48,9 +48,16 @@ class DepthObstacle:
 
     def __init__(self, camera: CameraModel, ratio: float = 0.7, min_area: int = 300,
                  max_range: float = PATH_RANGE, half_width: float = PATH_HALF_WIDTH, fit_range: float = 25.0,
-                 contact: float = 0.9, scale: float = 1.0, opening: int = 1):
+                 contact: float = 0.9, scale: float = 1.0, opening: int = 1, min_distance: float = 0.0,
+                 min_height: float = 0.0, reject_bottom: bool = False):
         self.camera, self.ratio, self.min_area, self.contact = camera, ratio, min_area, contact
         self.scale, self.opening = scale, opening    # scale: distance correction, chosen on training towns
+        # False-warning filters (chosen on weathered training-town frames):
+        #   min_distance   ignore obstacles closer than this (too late to matter, and where lens drops land)
+        #   min_height     the blob must stand at least this many metres tall at its distance
+        #   reject_bottom  ignore blobs that still sit in front of the road at the image's bottom row:
+        #                  a real object meets the road; a drop on the lens or spray does not
+        self.min_distance, self.min_height, self.reject_bottom = min_distance, min_height, reject_bottom
         self.max_range, self.half_width, self.fit_range = max_range, half_width, fit_range
         h, w = camera.height, camera.width
         v = np.arange(h, dtype=np.float64)
@@ -77,14 +84,14 @@ class DepthObstacle:
             keep = res <= np.quantile(res, 0.6)
         return (float(a), float(b)) if a is not None and a > 0 else None
 
-    def __call__(self, depth: np.ndarray) -> dict:
+    def candidates(self, depth: np.ndarray) -> tuple[list[dict], tuple[float, float] | None]:
+        """Every standing blob in the corridor, before the false-warning filters."""
         h, w = self.camera.height, self.camera.width
         d = depth if depth.shape == (h, w) else np.asarray(
             ndimage.zoom(depth, (h / depth.shape[0], w / depth.shape[1]), order=1), np.float32)
         ab = self.fit(d)
-        out = {"distance": None, "lateral": None, "fit": ab, "pixels": 0}
         if ab is None:
-            return out
+            return [], None
         a, b = ab
         inv = (d - b) / a                                             # estimated 1 / Z
         z_est = np.where(inv > 1e-4, 1.0 / np.maximum(inv, 1e-4), np.inf)
@@ -94,12 +101,13 @@ class DepthObstacle:
         standing = (self.below[:, None] & (z_est < self.ratio * self.z_road[:, None])
                     & (z_est < self.max_range) & (lat < self.half_width))
         standing = ndimage.binary_opening(standing, iterations=self.opening) if self.opening else standing
-        labels, n = ndimage.label(standing)
-        best = None
-        for k in range(1, n + 1):
-            ys, xs = np.nonzero(labels == k)
+        labels, _ = ndimage.label(standing)
+        blobs = []
+        for k, sl in enumerate(ndimage.find_objects(labels), start=1):
+            ys, xs = np.nonzero(labels[sl] == k)
             if ys.size < self.min_area:
                 continue
+            ys, xs = ys + sl[0].start, xs + sl[1].start
             # Follow the object down to where it meets the road: below the blob, rows whose pixels
             # (in the blob's columns) still sit clearly in front of the road surface. The depth
             # model compresses distant objects, so the blob itself often stops above the contact.
@@ -108,9 +116,23 @@ class DepthObstacle:
             while bottom + 1 < h and (z_est[bottom + 1, c0:c1] < self.contact * self.z_road[bottom + 1]).mean() > 0.5:
                 bottom += 1
             z = self.scale * float(self.z_road[min(bottom + 1, h - 1)])
-            lat = float(self.camera.lateral(np.median(xs), z))
-            if z < self.max_range and abs(lat) < self.half_width and (best is None or z < best[0]):
-                best = (z, lat, ys.size)
+            blobs.append({"distance": z, "lateral": float(self.camera.lateral(np.median(xs), z)), "pixels": int(ys.size),
+                          "height": (bottom - int(ys.min()) + 1) * z / self.camera.f, "at_bottom": bottom >= h - 1,
+                          "box": (c0, int(ys.min()), c1, bottom + 1)})
+        return blobs, ab
+
+    def select(self, blobs: list[dict]) -> dict | None:
+        """The nearest blob that passes the false-warning filters, or None."""
+        ok = [b for b in blobs
+              if b["distance"] < self.max_range and abs(b["lateral"]) < self.half_width
+              and b["distance"] >= self.min_distance and b["height"] >= self.min_height
+              and not (self.reject_bottom and b["at_bottom"])]
+        return min(ok, key=lambda b: b["distance"]) if ok else None
+
+    def __call__(self, depth: np.ndarray) -> dict:
+        blobs, ab = self.candidates(depth)
+        best = self.select(blobs)
+        out = {"distance": None, "lateral": None, "fit": ab, "pixels": 0, "box": None}
         if best is not None:
-            out.update({"distance": best[0], "lateral": best[1], "pixels": best[2]})
+            out.update({k: best[k] for k in ("distance", "lateral", "pixels", "box")})
         return out

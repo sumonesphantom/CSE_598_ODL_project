@@ -1,0 +1,10 @@
+{
+  "ratio": 0.8,
+  "half_width": 1.5,
+  "min_area": 25,
+  "opening": 1,
+  "scale": 0.65,
+  "min_distance": 6.0,
+  "min_height": 0.8,
+  "reject_bottom": false
+}

@@ -58,7 +58,7 @@ CSE 598: Operationalizing Deep Learning (Fall 2026), group project.
 > | `src/bolero/car_perception.py` | Condition router, isolation (distance, in-path flag), camera model |
 > | `src/bolero/driving.py` | Brake policy, steering, per-run safety measures |
 > | `src/bolero/task_repair.py`, `learned_restoration.py`, `third_party/` | Repair models (learned repair; Restormer and InstructIR, MIT code) |
-> | `results/car_scenarios/` | Phase 4: `runs.csv` (every run), `traces/` (every run step by step), `outcomes.csv`, `paired.csv`, `by_effect.csv`, `by_scenario.csv`, `headline.json`, `check/` (Phase 3), `demo/demo.mp4` |
+> | `results/car_scenarios/` | Phase 4: `runs.csv` (every run), `traces/` (every run step by step), `outcomes.csv`, `paired.csv`, `by_effect.csv`, `by_scenario.csv`, `headline.json`, `check/` (Phase 3), `demo/demo.mp4`; step C: `paired_depth_vs_routed.csv`, `paired_depth_vs_none.csv`, `demo_depth/demo_h264.mp4`, `demo_depth_all/demo_h264.mp4`, `demo_depth_all/demo_3way_h264.mp4` |
 > | `results/car_perception/`, `car_routing/`, `car_real_check/`, `car_live/` | Phases 1-2 results |
 > | `results/car_repair/`, `task_repair/` | The repair redo: real-photo choice, car-frame check, training log |
 > | `results/degradation_compare/`, `weather_detector/` | Traffic-camera testbed and condition-detector results |
@@ -70,7 +70,7 @@ CSE 598: Operationalizing Deep Learning (Fall 2026), group project.
 > (downloaded and hash-checked on first use). Commands are in [DRIVING.md](DRIVING.md#reproduce)
 > and [CARLA.md](CARLA.md).
 >
-> **The depth step on the car (added after Phase 4; detection test done, driving not yet).**
+> **The depth step on the car (added after Phase 4; detection test and driving done).**
 >
 > Phases 2-4 did not use the project's depth step, the core of the method ("forced depth
 > perception"). `scripts/run_car_depth.py` (with `src/bolero/car_depth.py`) adds the pieces from
@@ -86,10 +86,25 @@ CSE 598: Operationalizing Deep Learning (Fall 2026), group project.
 > | **Depth obstacle warning** (new, builds on `depth.py`) | **With the detector it finds 82 % of path hazards in dust (detector alone 56 %) and 73 % in rain (51 %)**, but with many false warnings close to the car (warnings under 15 m on frames with nothing in the path: 97 % with rain on the lens, 42 % in dust storms, 13 % clean) |
 > | Isolation lab (`research/bolero_isolation_lab`) | Not added: the car already isolates objects (Mask R-CNN masks, distance and lane from camera geometry; about 90 % precise, 10 % distance error, Phase 2) |
 >
-> **Still to do (step C):** drive with the obstacle warning after cutting its false warnings
-> (lens-rain handling, two-frame persistence, gentle braking unless the detector agrees). The
-> cues and SAM did not improve detection, so they are not planned for driving. About 2.2-3.4 h
-> per driven variant.
+> **Step C: driving with the depth warning (`routed_depth`).** The warning's false warnings were
+> cut first (blobs under 6 m or under 0.8 m tall are ignored; held-out towns: 37 % → 19 %, lens
+> rain 93 % → 24 %). When only the warning sees an object, the car brakes gently (capped at 0.4).
+> It then drove the 352 Phase 4 runs, paired run by run with Phase 4:
+>
+> | Collision rate | no repair | algorithm | **algorithm + depth warning** | change vs algorithm [95 % CI] |
+> |---|---|---|---|---|
+> | rain (144 pairs) | 26 % | 24 % | **10 %** | -13 pp [-19, -7] |
+> | dust (96 pairs) | 33 % | 31 % | **9 %** | -22 pp [-30, -14] |
+> | all weather (240 pairs) | 29 % | 27 % | **10 %** | **-17 pp [-22, -12]** (43 saved, 3 caused) |
+>
+> The cost is braking for nothing. With no hazard in the lane, the car brakes in 50 % of rain
+> runs and 72 % of dust runs (6 % before), for 1-3 s per run on average. Details in
+> [DRIVING.md](DRIVING.md#step-c-driving-with-the-obstacle-warning); demo
+> `results/car_scenarios/demo_depth/demo_h264.mp4` (dust cases). Every scenario in every weather:
+> `results/car_scenarios/demo_depth_all/demo_h264.mp4` (algorithm vs. algorithm + depth warning) and
+> **`results/car_scenarios/demo_depth_all/demo_3way_h264.mp4`** (no algorithm | algorithm |
+> algorithm + depth warning, 13 cases, 3 min). The cues and SAM did not improve detection, so they
+> were not driven.
 
 ---
 

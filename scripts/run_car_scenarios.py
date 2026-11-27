@@ -65,7 +65,7 @@ TOWNS = ("Town10HD_Opt", "Town02_Opt")
 SCENARIOS = ("pedestrian_cross", "stopped_car", "lead_brake", "adjacent_car")
 EFFECTS = ("rain_streaks", "rain_mist", "rain_lens", "dust_haze", "dust_storm")
 VARIANTS = [("clean", 0)] + [(e, lv) for e in EFFECTS for lv in (2, 3)]
-PIPELINES = ("gt", "none", "routed")
+PIPELINES = ("gt", "none", "routed", "routed_depth")
 DT, PERCEIVE_EVERY, LATENCY_TICKS = 0.05, 2, 2
 SPEED = 10.0
 HAZARD_AT, LEAD_AT, TRIGGER = 70.0, 30.0, 35.0
@@ -272,7 +272,7 @@ def hazard_state(stage: Stage):
 def drive(client, world, start_wp, scenario, variant, pipeline, perceive, run_id, args, video=None):
     stage = Stage(world, start_wp, scenario, pipeline == "gt", args.seed)
     policy = BrakePolicy(target_speed=SPEED)
-    pending, react = [], None
+    pending, react, strong = [], None, True
     trace, routes = [], []
     eff, lv = variant
     in_path_width = stage.ego.bounding_box.extent.y + (stage.hazard.bounding_box.extent.y if scenario != "pedestrian_cross" else 0.3) + 0.2
@@ -292,8 +292,8 @@ def drive(client, world, start_wp, scenario, variant, pipeline, perceive, run_id
             if coll_tick is None:
                 max_dev = max(max_dev, dev)
             while pending and pending[0][0] <= k:
-                react = pending.pop(0)[1]
-            throttle, brake = policy.control(speed, react)
+                _, react, strong = pending.pop(0)
+            throttle, brake = policy.control(speed, react, strong)
             stage.ego.apply_control(carla.VehicleControl(throttle=throttle, brake=brake, steer=steer))
             if getattr(args, "show", False):         # CARLA window: chase camera behind the car
                 back = ego_tf.location - ego_tf.get_forward_vector() * 9.0 + carla.Location(z=4.0)
@@ -310,7 +310,7 @@ def drive(client, world, start_wp, scenario, variant, pipeline, perceive, run_id
                     objects, route, shown = perceive(w)
                 routes.append(route)
                 d = policy.observe(objects, PERCEIVE_EVERY * DT, speed)
-                pending.append((k + LATENCY_TICKS, d))
+                pending.append((k + LATENCY_TICKS, d, policy.strong))
                 if video is not None:
                     video.write(frame_overlay(shown, objects, f"{run_id}  t={t:4.1f}s  {speed * 3.6:4.1f} km/h  "
                                               f"brake {brake:.2f}  route {route}  gap {gap:5.1f} m"))
@@ -353,8 +353,12 @@ def settings():
     det = head["car_detector"]
     choice_path = RESULTS_DIR / "car_repair" / "choice.json"
     repairers = json.loads(choice_path.read_text())["repairers"] if choice_path.exists() else head["repairer_choice"][det]
+    warning_path = RESULTS_DIR / "car_depth" / "warning_choice.json"
+    warning = json.loads(warning_path.read_text()) if warning_path.exists() else None
     return {"detector": det, "score": head["score_thresholds"][det], "router": head["car_router"],
-            "repairers": repairers, "repairers_from": str(choice_path if choice_path.exists() else "car_perception/headline.json")}
+            "repairers": repairers, "repairers_from": str(choice_path.relative_to(RESULTS_DIR.parent) if choice_path.exists()
+                                                          else "results/car_perception/headline.json"),
+            "depth_warning": warning}
 
 
 def make_pipelines(s, args):
@@ -376,7 +380,32 @@ def make_pipelines(s, args):
     def reset():
         router.reset()
 
-    return {"none": none, "routed": routed, "gt": None}, reset
+    pipes = {"none": none, "routed": routed, "gt": None}
+    if "routed_depth" in args.pipelines:
+        # The algorithm plus the depth obstacle warning (bolero.car_depth): Depth-Anything-V2 on
+        # the repaired frame, at half resolution, settings from run_car_depth.py --stage tune-warning.
+        from bolero.car_depth import DepthObstacle
+        from bolero.depth import DepthEstimator
+
+        if s["depth_warning"] is None:
+            raise SystemExit("results/car_depth/warning_choice.json missing: run run_car_depth.py --stage tune-warning")
+        est = DepthEstimator()
+        warn_cam = CameraModel(WIDTH // 2, HEIGHT // 2, FOV, 1.4, -2.0)
+        warning = DepthObstacle(warn_cam, **s["depth_warning"])
+
+        def routed_depth(w):
+            r = full(w)
+            objects = [{**o, "source": "detector"} for o in r["objects"]]
+            D = cv2.resize(est(r["repaired"]), (WIDTH // 2, HEIGHT // 2), interpolation=cv2.INTER_AREA)
+            ob = warning(D)
+            if ob["distance"] is not None:
+                x0, y0, x1, y1 = (2 * v for v in ob["box"])
+                objects.append({"box": [x0, y0, x1, y1], "label": "depth", "score": 1.0, "distance": ob["distance"],
+                                "lateral": ob["lateral"], "in_path": True, "source": "depth"})
+            return objects, r["route"], r["repaired"]
+
+        pipes["routed_depth"] = routed_depth
+    return pipes, reset
 
 
 # --- analysis ----------------------------------------------------------------------------------
@@ -414,6 +443,29 @@ def analyze(args):
                     brake_seconds=("brake_seconds", "mean"), min_speed=("min_speed", "mean")).reset_index())
     by_scen.to_csv(args.out / "by_scenario.csv", index=False)
 
+    # The depth obstacle warning, paired with the Phase 4 pipelines on the same runs.
+    pairs_depth = {}
+    for base in ("routed", "none"):
+        if not {"routed_depth", base} <= set(hazard.pipeline):
+            continue
+        key = ["scenario", "town", "location", "effect", "level"]
+        a = hazard[hazard.pipeline == base].set_index(key)[["collision", "impact_speed"]]
+        b = hazard[hazard.pipeline == "routed_depth"].set_index(key)[["collision", "impact_speed"]]
+        pr = a.join(b, lsuffix="_base", rsuffix="_depth", how="inner").reset_index()
+        pr["weather"] = np.where(pr.effect == "clean", "clean", pr.effect.str.split("_").str[0])
+        pr.to_csv(args.out / f"paired_depth_vs_{base}.csv", index=False)
+        rng = np.random.default_rng(args.seed)
+        res = {}
+        for weather, g in list(pr.groupby("weather")) + [("all weather", pr[pr.weather != "clean"])]:
+            diff = g.collision_depth.astype(float).to_numpy() - g.collision_base.astype(float).to_numpy()
+            boots = [diff[rng.integers(0, len(diff), len(diff))].mean() for _ in range(2000)]
+            res[weather] = {"pairs": len(g), f"collision_{base}": float(g.collision_base.mean()),
+                            "collision_routed_depth": float(g.collision_depth.mean()), "change": float(diff.mean()),
+                            "change_ci": [float(np.percentile(boots, 2.5)), float(np.percentile(boots, 97.5))],
+                            "saved": int((g.collision_base & ~g.collision_depth).sum()),
+                            "caused": int((~g.collision_base & g.collision_depth).sum())}
+        pairs_depth[f"routed_depth_vs_{base}"] = res
+
     # Paired comparison: the same scenario, location and weather, driven with and without repair.
     key = ["scenario", "town", "location", "effect", "level"]
     a = hazard[hazard.pipeline == "none"].set_index(key)
@@ -423,7 +475,8 @@ def analyze(args):
     pair["weather"] = np.where(pair.effect == "clean", "clean", pair.effect.str.split("_").str[0])
     pair.to_csv(args.out / "paired.csv", index=False)
     rng = np.random.default_rng(args.seed)
-    head = {"settings": settings(), "weather_model": args.weather_model, "dropped_locations": dropped, "paired": {}}
+    head = {"settings": settings(), "weather_model": args.weather_model, "dropped_locations": dropped, "paired": {},
+            "paired_depth": pairs_depth}
     for weather, g in pair.groupby("weather"):
         diff = g.collision_routed.astype(float).to_numpy() - g.collision_none.astype(float).to_numpy()
         boots = [diff[rng.integers(0, len(diff), len(diff))].mean() for _ in range(2000)]
@@ -440,6 +493,8 @@ def analyze(args):
     with pd.option_context("display.width", 200, "display.max_columns", 20):
         print(outcomes.round(3).to_string(index=False))
         print(json.dumps(head["paired"], indent=2))
+        if pairs_depth:
+            print(json.dumps(pairs_depth, indent=2))
 
 
 class ShowWhileWriting:
@@ -473,12 +528,12 @@ def parse_run_id(run_id: str):
 def stitch_demo(args):
     """demo/demo.mp4: for each demo case, the unrepaired car (left) beside the full algorithm
     (right), same weather and scenario, with each run's outcome in a title strip."""
-    folder = args.out / "demo"
+    folder = args.out / args.demo_dir
     runs = pd.read_csv(folder / "runs.csv").set_index("run")
-    cases = sorted({r.rsplit("_", 1)[0] for r in runs.index})
+    cases = sorted({r[: -len(parse_run_id(r)[5]) - 1] for r in runs.index})
     out = None
     for case in cases:
-        pair = [f"{case}_none", f"{case}_routed"]
+        pair = [f"{case}_{p}" for p in args.demo_pair]
         if not all((folder / f"{r}.mp4").exists() and r in runs.index for r in pair):
             continue
         clips = []
@@ -492,7 +547,8 @@ def stitch_demo(args):
             cap.release()
             m = runs.loc[r]
             verdict = f"COLLISION at {3.6 * m.impact_speed:.0f} km/h" if m.collision else f"stopped safely, {m.min_gap:.1f} m short"
-            name = "no repair" if r.endswith("_none") else "our algorithm (route + repair)"
+            name = {"none": "no repair", "routed": "our algorithm (route + repair)",
+                    "routed_depth": "algorithm + depth warning", "gt": "ground truth"}[parse_run_id(r)[5]]
             clips.append((frames, f"{name}: {verdict}", (40, 40, 220) if m.collision else (60, 180, 60)))
         n = max(len(c[0]) for c in clips)
         for k in range(n + 15):                         # hold the last frame for 1.5 s
@@ -507,11 +563,11 @@ def stitch_demo(args):
             cv2.putText(head, case.replace("_", " "), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
             frame = np.vstack([head, frame])
             if out is None:
-                out = cv2.VideoWriter(str(folder / "demo.mp4"), cv2.VideoWriter_fourcc(*"mp4v"), 10.0, frame.shape[1::-1])
+                out = cv2.VideoWriter(str(folder / args.demo_video), cv2.VideoWriter_fourcc(*"mp4v"), 10.0, frame.shape[1::-1])
             out.write(frame)
     if out is not None:
         out.release()
-        print("wrote", folder / "demo.mp4")
+        print("wrote", folder / args.demo_video)
 
 
 # --- main --------------------------------------------------------------------------------------
@@ -522,8 +578,15 @@ def main():
     p.add_argument("--towns", nargs="+", default=list(TOWNS))
     p.add_argument("--show", action="store_true", help="pilot / demo: show the drive live (chase camera in the "
                    "CARLA window, perception view in a second window) while recording")
+    p.add_argument("--demo-pair", nargs="+", default=["none", "routed"], metavar="PIPELINE",
+                   help="the pipelines shown side by side in the demo video, left to right")
+    p.add_argument("--demo-video", default="demo.mp4", help="file name of the stitched demo video")
+    p.add_argument("--demo-dir", default="demo", help="folder under --out for the demo videos (--stage demo)")
     p.add_argument("--demo-runs", nargs="+", default=[], help="run ids to re-drive with video (--stage demo)")
     p.add_argument("--weather-model", default="v2")
+    p.add_argument("--pipelines", nargs="+", default=["gt", "none", "routed"], choices=PIPELINES,
+                   help="pipelines to drive in the experiment (gt runs clean only); routed_depth adds the "
+                        "depth obstacle warning to the routed pipeline")
     p.add_argument("--detectors", type=Path, default=RESULTS_DIR / "weather_detector")
     p.add_argument("--port", type=int, default=2000)
     p.add_argument("--seed", type=int, default=SEED)
@@ -537,6 +600,7 @@ def main():
     demo = [parse_run_id(r) for r in args.demo_runs]
     if args.stage == "demo":
         args.towns = [t for t in args.towns if any(d[0] == t for d in demo)]
+        args.pipelines = sorted(set(args.pipelines) | {d[5] for d in demo})
     s = settings()
     print("settings:", s, flush=True)
     perceive, reset = make_pipelines(s, args)
@@ -544,7 +608,11 @@ def main():
     client.set_timeout(120.0)
     runs_path = args.out / "runs.csv"
     side = args.stage in ("pilot", "check", "demo")
+    sub = args.demo_dir if args.stage == "demo" else args.stage     # side-run output folder
     rows = pd.read_csv(runs_path).to_dict("records") if runs_path.exists() and not side else []
+    if args.stage == "demo" and (args.out / sub / "runs.csv").exists():
+        # Keep the folder's earlier demo runs (they are stitched too); re-drive only the ones asked for.
+        rows = [r for r in pd.read_csv(args.out / sub / "runs.csv").to_dict("records") if r["run"] not in args.demo_runs]
     done = {r["run"] for r in rows}
     (args.out / "traces").mkdir(exist_ok=True)
     loc_info = {}
@@ -573,8 +641,9 @@ def main():
                     plan += [(li, wp, scen, v, "none") for v in (("dust_haze", 3), ("rain_mist", 3))]
                     plan += [(li, wp, scen, v, "routed") for v in (("dust_haze", 3), ("rain_mist", 3))]
                     continue
-                plan.append((li, wp, scen, ("clean", 0), "gt"))
-                plan += [(li, wp, scen, v, pipe) for v in VARIANTS for pipe in ("none", "routed")]
+                if "gt" in args.pipelines:
+                    plan.append((li, wp, scen, ("clean", 0), "gt"))
+                plan += [(li, wp, scen, v, pipe) for v in VARIANTS for pipe in args.pipelines if pipe != "gt"]
         start = time.time()
         for n, (li, wp, scen, (eff, lv), pipe) in enumerate(plan):
             run_id = f"{town}_L{li}_{scen}_{eff}{lv}_{pipe}"
@@ -583,8 +652,8 @@ def main():
             reset()
             video = None
             if args.stage in ("pilot", "demo"):
-                (args.out / args.stage).mkdir(exist_ok=True)
-                video = cv2.VideoWriter(str(args.out / args.stage / f"{run_id}.mp4"), cv2.VideoWriter_fourcc(*"mp4v"), 10.0, (960, 576))
+                (args.out / sub).mkdir(exist_ok=True)
+                video = cv2.VideoWriter(str(args.out / sub / f"{run_id}.mp4"), cv2.VideoWriter_fourcc(*"mp4v"), 10.0, (960, 576))
                 if args.show:
                     video = ShowWhileWriting(video, run_id)
             try:
@@ -595,17 +664,23 @@ def main():
             finally:
                 if video is not None:
                     video.release()
-            trace.to_csv(args.out / "traces" / f"{run_id}.csv.gz", index=False)
+            # Side runs (pilot, check, demo) keep their traces in their own folder, so a re-drive
+            # never overwrites the experiment's trace of the same run.
+            tdir = args.out / sub / "traces" if side else args.out / "traces"
+            tdir.mkdir(parents=True, exist_ok=True)
+            trace.to_csv(tdir / f"{run_id}.csv.gz", index=False)
             row = {"run": run_id, "town": town, "location": li, "scenario": scen, "effect": eff, "level": lv, "pipeline": pipe, **m}
             rows.append(row)
             if side:
-                (args.out / args.stage).mkdir(exist_ok=True)
-            pd.DataFrame(rows).to_csv(args.out / args.stage / "runs.csv" if side else runs_path, index=False)
+                (args.out / sub).mkdir(exist_ok=True)
+            pd.DataFrame(rows).to_csv(args.out / sub / "runs.csv" if side else runs_path, index=False)
             print(f"[{n + 1}/{len(plan)} {time.time() - start:.0f}s] {run_id}: collision={m['collision']} dev={m['route_deviation']:.2f} "
                   f"min_gap={m['min_gap']:.1f} onset_gap={m['brake_onset_gap']:.1f} brake_s={m['brake_seconds']:.1f}", flush=True)
         st.synchronous_mode, st.fixed_delta_seconds = False, None
         world.apply_settings(st)
-    (args.out / "locations.json").write_text(json.dumps(loc_info, indent=2))
+    loc_path = args.out / "locations.json"     # merge: a run over some towns keeps the others
+    loc_info = {**(json.loads(loc_path.read_text()) if loc_path.exists() else {}), **loc_info}
+    loc_path.write_text(json.dumps(loc_info, indent=2))
     if args.stage == "all":
         analyze(args)
     if args.stage == "demo":

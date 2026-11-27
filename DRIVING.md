@@ -503,12 +503,114 @@ Bold: the interval excludes zero.
 - **Speed** (median per frame): depth 47 ms, cues 3-10 ms, the obstacle warning 27 ms, SAM 653 ms.
   Depth with a cue, or with the warning, fits the car's 100 ms budget; SAM does not.
 
-**What this means for driving (step C, not started):**
-- The cues and SAM are not worth a driving run: they do not improve detection.
-- The obstacle warning is, but first its false warnings must come down, for example by:
-  - recognizing lens rain and ignoring very near blobs then;
-  - requiring a warning to persist over two frames and to touch the road;
-  - braking gently on a warning alone and hard only when the detector agrees.
+The cues and SAM do not improve detection, so they were not driven. The obstacle warning was
+(step C, below).
+
+### Step C: driving with the obstacle warning
+
+**Cutting its false warnings first** (`--stage tune-warning`, `warning_tuning.csv`,
+`warning_choice.json`). The warning runs on the depth map at half resolution (640 x 360), and
+three filters were added:
+- `min_distance`: ignore blobs closer than this. Lens drops sit right in front of the camera.
+- `min_height`: the blob must stand at least this many metres tall at its distance.
+- `reject_bottom`: ignore blobs that still cover the image's bottom row.
+
+432 settings were scored on weathered frames of the training towns, choosing the one with the
+most found hazards minus twice the false warnings. The choice is `min_distance` 6 m and
+`min_height` 0.8 m (`reject_bottom` off). Checked on the held-out towns (`warning_validation.csv`):
+
+| held-out frames | found, before → after | false warnings, before → after |
+|---|---|---|
+| all weather | 0.45 → 0.51 | 0.37 → **0.19** |
+| clean | 0.60 → 0.60 | 0.11 → 0.10 |
+| rain on the lens | 0.04 → 0.42 | 0.93 → **0.24** |
+| rain mist | 0.36 → 0.34 | 0.24 → 0.09 |
+| dust storm | 0.59 → 0.59 | 0.55 → 0.44 |
+
+The lens-rain false warnings drop from 93 % to 24 %. Dust storms remain the weak case (44 %).
+
+**How the car uses it** (`routed_depth` in `run_car_scenarios.py`, `BrakePolicy` in
+`bolero.driving`):
+- The full Phase 4 pipeline runs unchanged, and Depth-Anything runs on the repaired frame.
+- The warning's nearest blob is treated as one more in-path object.
+- The same two-frame confirmation and 0.5 s memory apply to it as to detections.
+- When only the warning reports the object (the detector does not), the brake is capped at
+  0.4 (gentle). The car brakes hard only when the detector sees the object too.
+
+**The drive:** the 352 weathered and clean runs of Phase 4 (same towns, locations, scenarios and
+weather), with `routed_depth`, compared run by run with Phase 4's `routed` and `none`
+(`paired_depth_vs_routed.csv`, `paired_depth_vs_none.csv`, `headline.json` → `paired_depth`).
+Collision rate on the hazard scenarios, 95 % bootstrap interval of the paired change:
+
+| | pairs | no repair | algorithm (Phase 4) | **algorithm + depth warning** | change vs algorithm | saved / caused |
+|---|---|---|---|---|---|---|
+| clean | 24 | 0 % | 0 % | 0 % | 0 | 0 / 0 |
+| rain | 144 | 26 % | 24 % | **10 %** | **-13 pp** [-19, -7] | 22 / 3 |
+| dust | 96 | 33 % | 31 % | **9 %** | **-22 pp** [-30, -14] | 21 / 0 |
+| **all weather** | 240 | 29 % | 27 % | **10 %** | **-17 pp** [-22, -12] | 43 / 3 |
+
+Against no repair: -19 pp [-25, -14], 48 saved, 2 caused. When the car does crash, it hits
+more slowly: the mean impact speed is 18 km/h, against 27 km/h (algorithm) and 28 km/h (no repair).
+
+By effect (collision rate on the hazard scenarios; none / algorithm / algorithm + warning):
+- rain mist: 79 / 65 / **31 %**
+- dust storm: 67 / 62 / **19 %**
+- rain streaks: 0 / 6 / 0 %. The warning also removes the crashes the dehazing repair caused.
+- rain on the lens and dust haze: 0 % in all three.
+
+By scenario: stopped car 34 → 12 %, braking lead car 35 → 15 %, crossing pedestrian 11 → 2 %.
+
+**The cost: braking for nothing.** On the adjacent-car scenario (nothing in the lane), the car
+now brakes in many runs where nothing is there:
+
+| | runs | share of runs with braking, algorithm → + warning | brake seconds per run |
+|---|---|---|---|
+| clean | 8 | 12 % → 12 % | 0.27 → 0.43 |
+| rain | 48 | 6 % → **50 %** | 0.15 → 1.15 |
+| dust | 32 | 6 % → **72 %** | 0.20 → 3.05 |
+
+The brakes are gentle (capped at 0.4), but in a dust storm the car slows for about 5 s per run.
+On the hazard scenarios the car also starts braking much earlier: the median onset is 44 m
+before the hazard in dust, against 17 m. On a real road, with traffic behind the car, braking for
+nothing would be a hazard of its own.
+
+**The 3 crashes it caused** are all in rain mist at level 2, at 11-14 km/h. In each, the
+detector saw the object later than in the paired Phase 4 run (braking began 7 m before it,
+against 8-16 m), and the warning did not fire earlier. The weather's random pattern (drops,
+grain) is drawn per run, so paired runs get the same effect and level but not the same pattern,
+as in Phase 4. These crashes are that variation, not the warning slowing the car.
+
+**What step C shows:** depth earns its place in the car's pipeline. The detector misses objects
+in heavy weather, and estimated depth (with no recognition) still sees that something stands in
+the lane. Together they cut crashes by about two thirds (27 % → 10 %), a larger gain than any
+repair in Phase 4. The price is braking for nothing in rain and above all in dust storms. The
+next step would be cutting the dust-storm false warnings (for example temporal consistency over
+more frames, or a lower false-warning weight in the tuning) without losing the found hazards.
+
+**Demo video:** `results/car_scenarios/demo_depth/demo_h264.mp4`. The algorithm (left) beside the
+algorithm with the depth warning (right) in four cases: two crashes the warning prevents (dust
+storm: stopped car, braking lead car), one it causes (rain mist, stopped car) and one braking for
+nothing (dust storm, adjacent car: 8.7 s of braking). All 8 re-drives ended as in the experiment.
+One case tried first (rain mist, crossing pedestrian, level 3) did not reproduce: the warning's
+re-drive crashed, against a safe stop in the experiment. It was dropped from the demo. Its
+experiment trace was overwritten by that re-drive (since fixed: demo traces now go to
+`demo_depth/traces/`); its row in `runs.csv` is the experiment's.
+
+**Demo video, every scenario and weather:** `results/car_scenarios/demo_depth_all/demo_h264.mp4`.
+13 cases, algorithm (left) beside algorithm + depth warning (right), covering all four scenarios
+and all six weather conditions:
+- clean: crossing pedestrian, braking lead car
+- rain mist: crossing pedestrian and stopped car (crashes prevented), stopped car (the crash caused)
+- rain streaks: braking lead car, stopped car (crashes prevented)
+- rain on the lens: stopped car, adjacent car
+- dust haze: crossing pedestrian
+- dust storm: stopped car, braking lead car (crashes prevented), adjacent car (braking for nothing)
+
+All 26 re-drives ended as in the experiment.
+
+**Three-way demo:** `results/car_scenarios/demo_depth_all/demo_3way_h264.mp4` (3 min, 48 MB, H.264).
+The same 13 cases with no algorithm (left), the algorithm (middle) and the algorithm + depth
+warning (right). All 39 re-drives ended as in the experiment.
 
 ## Conclusions and what is not covered
 
@@ -530,8 +632,13 @@ Bold: the interval excludes zero.
   The conformal gate is a sound way to set the router's threshold, but only when calibrated where
   the car drives. The **depth obstacle warning** (new) is the one clear gain: with the detector
   it finds 82 % of path hazards in dust (detector alone 56 %) and 73 % in rain (51 %), but it
-  raises many false warnings close to the car, above all with rain on the lens. It has not been
-  driven yet.
+  raises many false warnings close to the car, above all with rain on the lens.
+- **Step C, driving with the depth warning:** after its false warnings were cut (held-out: 37 %
+  → 19 %; lens rain 93 % → 24 %), the warning was driven in all 352 Phase 4 runs. **Crashes in
+  weather fall from 27 % (algorithm) to 10 %** (-17 pp [-22, -12]; 43 saved, 3 caused), in rain
+  (24 → 10 %) and dust (31 → 9 %). The cost is braking for nothing: with nothing in the lane the
+  car brakes in 50 % of rain runs and 72 % of dust runs (6 % before), gently but for up to 5 s in
+  dust storms.
 - **The most promising next step** is a repair that is specific to the kind of weather, not only
   its family. Dehazing helps mist but hurts streaks, so a router that separates mist from streaks
   (or a repair that does both) would remove the crashes the algorithm causes today.
@@ -551,6 +658,14 @@ Bold: the interval excludes zero.
   paired runs per effect, so effects smaller than about 5 percentage points cannot be resolved
 - The demo video re-drives the chosen runs rather than replaying them. All 10 re-drives ended as
   in the experiment (same crashes and safe stops)
+- Paired runs share the weather effect, level, town, location and scenario, but the weather's
+  random pattern (drops, grain) is drawn per run id, which includes the pipeline. Some of the
+  "saved" and "caused" runs therefore reflect pattern variation, not only the pipeline. The
+  interval of the paired change accounts for this variation. Re-driving the same run does not
+  always repeat its outcome either (1 of 10 step C demo re-drives differed)
+- Step C drives the depth warning in Phase 4's towns and locations. Its settings were chosen on
+  frames of other towns (the training towns), but Phase 4's driving locations were not held out
+  from Phase 4 itself
 - Found on the way: one Traffic Manager reused across towns keeps the first town's road map and
   steers cars into buildings. The car recorder uses a fresh one per town. The traffic-camera set
   in CARLA.md was affected (see its caveats)
@@ -573,6 +688,9 @@ python scripts/run_car_scenarios.py                # Phase 4: 736 runs, ~5 h, re
 python scripts/run_car_scenarios.py --stage demo --show --demo-runs <run ids>   # demo video, watched live
 python scripts/run_car_depth.py --stage tune-obstacle  # obstacle-warning settings, training towns, ~10 min
 python scripts/run_car_depth.py                    # depth cues, SAM, conformal gate, obstacle warning, ~70 min
+python scripts/run_car_depth.py --stage tune-warning  # cut the warning's false warnings, ~1 h
+python scripts/run_car_scenarios.py --pipelines routed_depth   # step C: 352 runs, ~7 h; then the analysis
+python scripts/run_car_scenarios.py --stage demo --demo-dir demo_depth --demo-pair routed routed_depth --demo-runs <run ids>
 ```
 
 Repair weights download on first use from the authors' releases (Restormer GitHub release,
