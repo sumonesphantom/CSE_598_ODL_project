@@ -411,6 +411,105 @@ and a title gives the run's outcome:
 Re-render with `python scripts/run_car_scenarios.py --stage demo --demo-runs <run ids>`; add
 `--show` to watch the drive live, with CARLA's camera following the car.
 
+## The depth step on the car (`scripts/run_car_depth.py`, `bolero.car_depth`)
+
+Phases 2-4 ran the algorithm's decision logic on the car (condition router → repair → frozen
+detector) but not its depth step, which is the core of the project ("forced depth perception").
+This section adds the pieces from `main` that the car did not use, as options on top of the Phase 4
+pipeline, and tests whether they help the car find what is in its path. It is a detection test on
+the held-out car frames (144 frames of Town10HD and Town02, clean and every weather v2 effect at
+levels 1-3), not yet a driving test.
+
+### What was added
+
+| Option | What it does |
+|---|---|
+| **depth cues** (6) | Depth-Anything-V2 estimates depth on the repaired frame. One of the project's six cues (`bolero.cues`) writes that structure back into the frame at its tuned strength (`results/tuning/strengths.json`), then the detector runs. This is the algorithm's depth step, unchanged. |
+| **SAM structure** (2 cues) | The boundary and separation cues with a SAM structure map instead of depth, as in the team's structure-source study. The project keeps the one central subject of an Imagenette photo; a road scene has many objects, so here every object-sized SAM mask is kept (`object_structure`). |
+| **conformal gate** | The router's fixed 0.6 threshold is replaced by the split-conformal gate (`bolero.conformal`, alpha = 0.05). It is calibrated on clean frames the router never saw, either from the training towns or from the held-out towns' frames outside the test set. |
+| **depth obstacle warning** (new) | Flags something standing in the car's lane from the depth map alone, without the detector having to recognize it (details below). |
+
+**How the obstacle warning works:**
+1. On a flat road, the distance of every image row follows from the camera's height and tilt.
+2. Depth-Anything's relative depth is fitted to those road distances on the lower part of the
+   frame, robustly. The fit is accurate: road distances come out within 5-15 % of CARLA's true
+   depth.
+3. Pixels that sit well in front of the road surface of their row, inside the car's lane and
+   within 40 m, are grouped into blobs.
+4. The nearest blob is followed down to where it meets the road, and that point gives its
+   distance.
+
+Its four settings were chosen on clean frames of the training towns (`--stage tune-obstacle`,
+`obstacle_tuning.csv`). There it finds 62 % of in-path hazards within 30 % of their true
+distance, with 14 % false warnings.
+
+### Results (`results/car_depth/`)
+
+In-path recall (share of objects in the car's path that are found), change vs. the Phase 4
+pipeline, 95 % block-bootstrap interval in brackets:
+
+| Option | clean | rain (levels 1-3) | dust (levels 1-3) |
+|---|---|---|---|
+| Phase 4 pipeline (in-path recall) | 0.830 | 0.523 | 0.568 |
+| cue: border strengthening | +0.011 [0.000, +0.033] | -0.001 | -0.002 |
+| cue: depth-boundary emphasis | -0.011 | **-0.019** [-0.037, -0.002] | **-0.042** [-0.067, -0.017] |
+| cue: entity/background separation | 0.000 | 0.000 | **-0.009** [-0.019, -0.002] |
+| cue: shadow reinforcement | +0.011 [0.000, +0.033] | -0.004 | **-0.017** [-0.035, -0.002] |
+| cue: contrast/luminance | +0.011 [0.000, +0.033] | +0.001 | +0.006 [-0.002, +0.015] |
+| cue: thermal injection | -0.023 | **-0.034** [-0.070, -0.005] | **-0.030** [-0.052, -0.009] |
+| SAM: boundary | 0.000 | -0.011 | **-0.053** [-0.088, -0.021] |
+| SAM: separation | 0.000 | +0.003 | -0.011 |
+| conformal gate (training towns) | +0.011 | +0.006 | 0.000 |
+| conformal gate (held-out towns) | -0.011 | -0.001 | 0.000 |
+
+Bold: the interval excludes zero.
+
+- **No depth cue helps the detector in rain or dust.** None is significantly positive, and four
+  are significantly harmful (depth-boundary emphasis, separation, shadow and thermal injection;
+  up to -0.042 in-path recall). The best, contrast/luminance, gives +0.006 in dust, within noise. This matches the
+  team's result on image classification: the cues do not give the recognizer evidence it can use.
+- **SAM does not help either**, and costs 0.65 s per frame (too slow for a car). Its boundary cue
+  is the most harmful option in dust (-0.053).
+- **The conformal gate's guarantee depends on where it is calibrated.**
+  - Calibrated on the training towns, it sends 65 % of the held-out towns' clean frames to a
+    repair instead of 5 %. Clean frames there look less "clean" to the router, so the
+    calibration does not carry over to a new place.
+  - Calibrated in the held-out towns (on frames outside the test), it sends 6 % of clean frames
+    to a repair, close to the 0.6 rule's 10 %, and detection is unchanged. It is a principled way
+    to set the threshold, not a gain.
+- **The depth obstacle warning is the one clear gain:**
+
+| | clean | rain | dust |
+|---|---|---|---|
+| frames with an object in the path | 73 | 657 | 438 |
+| nearest one found by the detector | 0.82 | 0.51 | 0.56 |
+| found by the warning (within 30 % of its distance) | 0.73 | 0.45 | **0.69** |
+| **found by either** | **0.95** | **0.73** | **0.82** |
+| false warnings (frames with nothing in the path) | 0.14 | 0.46 | 0.39 |
+
+  Depth finds hazards the detector misses: in dust it alone finds more than the detector does,
+  and together they find 82 % of path hazards instead of 56 % (rain: 73 % instead of 51 %). That
+  attacks exactly the crashes of Phase 4, where the detector saw the hazard too late or not at all.
+
+  The cost is false warnings, most of them close to the car:
+
+  | | clean | dust storm | rain on the lens |
+  |---|---|---|---|
+  | false warnings under 15 m, share of frames with nothing in the path | 13 % | 42 % | 97 % |
+
+  Drops on the lens really are close to the camera, so depth sees "something right in front".
+  As it stands, a car braking on every warning would brake for nothing in most lens-rain frames.
+
+- **Speed** (median per frame): depth 47 ms, cues 3-10 ms, the obstacle warning 27 ms, SAM 653 ms.
+  Depth with a cue, or with the warning, fits the car's 100 ms budget; SAM does not.
+
+**What this means for driving (step C, not started):**
+- The cues and SAM are not worth a driving run: they do not improve detection.
+- The obstacle warning is, but first its false warnings must come down, for example by:
+  - recognizing lens rain and ignoring very near blobs then;
+  - requiring a warning to persist over two frames and to touch the road;
+  - braking gently on a warning alone and hard only when the detector agrees.
+
 ## Conclusions and what is not covered
 
 - **What works:** the car's camera, the weather, routing (85 % of frames correct, 9 % of clean
@@ -426,6 +525,13 @@ Re-render with `python scripts/run_car_scenarios.py --stage demo --demo-runs <ru
   dataset registration, and the real-photo evidence already on hand (XWOD, DAWN) points the same
   way. The real-world evidence is therefore from traffic-camera and web photos, not a car's
   camera, and it is about detection only, not driving.
+- **The depth step (added afterwards, detection test only):** none of the six depth cues and
+  neither SAM variant improves detection on the car's frames in rain or dust, and several hurt.
+  The conformal gate is a sound way to set the router's threshold, but only when calibrated where
+  the car drives. The **depth obstacle warning** (new) is the one clear gain: with the detector
+  it finds 82 % of path hazards in dust (detector alone 56 %) and 73 % in rain (51 %), but it
+  raises many false warnings close to the car, above all with rain on the lens. It has not been
+  driven yet.
 - **The most promising next step** is a repair that is specific to the kind of weather, not only
   its family. Dehazing helps mist but hurts streaks, so a router that separates mist from streaks
   (or a repair that does both) would remove the crashes the algorithm causes today.
@@ -465,6 +571,8 @@ python scripts/run_car_repair.py                   # choose repairs on real phot
 python scripts/run_car_scenarios.py --stage check  # Phase 3: ground-truth driving at every location, ~4 min
 python scripts/run_car_scenarios.py                # Phase 4: 736 runs, ~5 h, resumable; then the analysis
 python scripts/run_car_scenarios.py --stage demo --show --demo-runs <run ids>   # demo video, watched live
+python scripts/run_car_depth.py --stage tune-obstacle  # obstacle-warning settings, training towns, ~10 min
+python scripts/run_car_depth.py                    # depth cues, SAM, conformal gate, obstacle warning, ~70 min
 ```
 
 Repair weights download on first use from the authors' releases (Restormer GitHub release,

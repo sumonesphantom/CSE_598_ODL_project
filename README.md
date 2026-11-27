@@ -70,30 +70,26 @@ CSE 598: Operationalizing Deep Learning (Fall 2026), group project.
 > (downloaded and hash-checked on first use). Commands are in [DRIVING.md](DRIVING.md#reproduce)
 > and [CARLA.md](CARLA.md).
 >
-> **Not yet done: depth and the other parts of the algorithm the car does not use yet.**
+> **The depth step on the car (added after Phase 4; detection test done, driving not yet).**
 >
-> The car pipeline runs the algorithm's decision logic (condition detector → repair for that
-> condition → frozen recognizer). It does **not** yet use the project's depth step, which is the
-> core of the method ("forced depth perception"). These pieces from `main` are not in the car
-> pipeline and still need to be implemented and tested in CARLA:
+> Phases 2-4 did not use the project's depth step, the core of the method ("forced depth
+> perception"). `scripts/run_car_depth.py` (with `src/bolero/car_depth.py`) adds the pieces from
+> `main` to the car pipeline as options and tests them on the held-out car frames, clean and in
+> rain and dust. Results in [DRIVING.md](DRIVING.md#the-depth-step-on-the-car-scriptsrun_car_depthpy-bolerocar_depth)
+> and `results/car_depth/`.
 >
-> | Piece (on `main`) | What it does in the project | What it could do for the car |
-> |---|---|---|
-> | Depth estimation and the 6 depth cues (`depth.py`, `cues.py`, strengths in `tuning.py`) | Depth-Anything-V2 estimates depth on the input itself; the cues write that structure back into the image (outline emphasis, entity/background separation, …) before the frozen recognizer | Sharpen objects and separate them from the background in rain and dust, so the detector finds a hazard sooner. Most crashes came from late or missed detections (see DRIVING.md, Phase 4). |
-> | Depth as an obstacle signal (new, builds on `depth.py`) | Not in the project | Flag "something close in my lane" from the depth map even when the detector cannot say what it is, so the car can brake on it |
-> | SAM / DETR structure (`segmentation.py`) | A SAM mask or DETR boxes used in place of the depth map inside the same cues | The same role as depth, with sharper object outlines. SAM takes about 4.7 s per image, so it would not run in real time on a real car, but in CARLA's lockstep simulation it can still be tested in driving. |
-> | Conformal gate (`conformal.py`) | A calibrated threshold for the condition detector with a guaranteed false-alarm rate | Replace the hand-set 0.6 threshold that decides when to repair |
-> | Isolation lab (`research/bolero_isolation_lab`) | Depth + Grad-CAM + DETR to isolate the subject | Compare with the car's own isolation (Mask R-CNN masks and distance from camera geometry) |
+> | Piece (from `main`) | Result on the car's frames |
+> |---|---|
+> | The 6 depth cues (`depth.py`, `cues.py`, tuned strengths) | No gain in rain or dust; four of the six significantly lower in-path recall (up to -0.04) |
+> | SAM structure (`segmentation.py`) | No gain; the boundary cue is the most harmful option in dust (-0.05); 0.65 s per frame |
+> | Conformal gate (`conformal.py`) | No change in detection. Calibrated on other towns it sends 65 % of clean frames to a repair; calibrated where the car drives, 6 % |
+> | **Depth obstacle warning** (new, builds on `depth.py`) | **With the detector it finds 82 % of path hazards in dust (detector alone 56 %) and 73 % in rain (51 %)**, but with many false warnings close to the car (warnings under 15 m on frames with nothing in the path: 97 % with rain on the lens, 42 % in dust storms, 13 % clean) |
+> | Isolation lab (`research/bolero_isolation_lab`) | Not added: the car already isolates objects (Mask R-CNN masks, distance and lane from camera geometry; about 90 % precise, 10 % distance error, Phase 2) |
 >
-> The team's tests on image classification found no accuracy gain from the depth cues or from
-> SAM. That was not tested on a car's camera in rain and dust, so it is not a reason to leave
-> them out here. Planned steps, none started yet:
->
-> 1. Add these pieces to the car pipeline as options, with tests.
-> 2. Detection check on the car frames (clean, rain, dust): in-path objects found and speed,
->    with and without each piece (about 2 h on the GPU).
-> 3. Driving experiment for the variants that help: about 2.3 h per depth variant; SAM only on
->    the crash-prone weather (rain mist, dust storm), about 6-8 h.
+> **Still to do (step C):** drive with the obstacle warning after cutting its false warnings
+> (lens-rain handling, two-frame persistence, gentle braking unless the detector agrees). The
+> cues and SAM did not improve detection, so they are not planned for driving. About 2.2-3.4 h
+> per driven variant.
 
 ---
 

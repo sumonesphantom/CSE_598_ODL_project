@@ -75,6 +75,8 @@ results/car_perception/infer/
 results/car_repair/sim/
 results/car_repair/real_dets.pkl
 !results/task_repair/
+!results/car_depth/
+results/car_depth/infer/
 !results/degradation_compare/
 results/degradation_compare/sets/
 !results/weather_detector/
