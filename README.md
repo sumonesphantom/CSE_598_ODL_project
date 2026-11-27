@@ -9,8 +9,10 @@ CSE 598: Operationalizing Deep Learning (Fall 2026), group project.
 > ## This branch (`carla-drive`): the CARLA work
 >
 > Aravind, 2026-11-25 to 2026-11-26. This branch adds the CARLA simulator work on top of the
-> weather track (branch `Arvind`). The rest of this README describes the whole project and is
-> unchanged from `main`. When merging into `main`, drop this section.
+> weather track (branch `Arvind`). The rest of this README describes the whole project, as on
+> `main`, plus the CARLA commands under "Running the pipeline". When merging into `main`, rework
+> this section into a regular "CARLA studies" section further down (without the branch-specific
+> wording) and add it to the Contents.
 >
 > **Two studies:**
 >
@@ -67,6 +69,31 @@ CSE 598: Operationalizing Deep Learning (Fall 2026), group project.
 > for GitHub; the record scripts regenerate them), and the Restormer and InstructIR weights
 > (downloaded and hash-checked on first use). Commands are in [DRIVING.md](DRIVING.md#reproduce)
 > and [CARLA.md](CARLA.md).
+>
+> **Not yet done: depth and the other parts of the algorithm the car does not use yet.**
+>
+> The car pipeline runs the algorithm's decision logic (condition detector → repair for that
+> condition → frozen recognizer). It does **not** yet use the project's depth step, which is the
+> core of the method ("forced depth perception"). These pieces from `main` are not in the car
+> pipeline and still need to be implemented and tested in CARLA:
+>
+> | Piece (on `main`) | What it does in the project | What it could do for the car |
+> |---|---|---|
+> | Depth estimation and the 6 depth cues (`depth.py`, `cues.py`, strengths in `tuning.py`) | Depth-Anything-V2 estimates depth on the input itself; the cues write that structure back into the image (outline emphasis, entity/background separation, …) before the frozen recognizer | Sharpen objects and separate them from the background in rain and dust, so the detector finds a hazard sooner. Most crashes came from late or missed detections (see DRIVING.md, Phase 4). |
+> | Depth as an obstacle signal (new, builds on `depth.py`) | Not in the project | Flag "something close in my lane" from the depth map even when the detector cannot say what it is, so the car can brake on it |
+> | SAM / DETR structure (`segmentation.py`) | A SAM mask or DETR boxes used in place of the depth map inside the same cues | The same role as depth, with sharper object outlines. SAM takes about 4.7 s per image, so it would not run in real time on a real car, but in CARLA's lockstep simulation it can still be tested in driving. |
+> | Conformal gate (`conformal.py`) | A calibrated threshold for the condition detector with a guaranteed false-alarm rate | Replace the hand-set 0.6 threshold that decides when to repair |
+> | Isolation lab (`research/bolero_isolation_lab`) | Depth + Grad-CAM + DETR to isolate the subject | Compare with the car's own isolation (Mask R-CNN masks and distance from camera geometry) |
+>
+> The team's tests on image classification found no accuracy gain from the depth cues or from
+> SAM. That was not tested on a car's camera in rain and dust, so it is not a reason to leave
+> them out here. Planned steps, none started yet:
+>
+> 1. Add these pieces to the car pipeline as options, with tests.
+> 2. Detection check on the car frames (clean, rain, dust): in-path objects found and speed,
+>    with and without each piece (about 2 h on the GPU).
+> 3. Driving experiment for the variants that help: about 2.3 h per depth variant; SAM only on
+>    the crash-prone weather (rain mist, dust storm), about 6-8 h.
 
 ---
 
