@@ -58,6 +58,12 @@ __pycache__/
 results/*
 # Presentation decks (kept locally, not in the repo)
 progress presentation/
+docs/pipeline_status.html
+# Run notes sent to teammates (not in the repo)
+ARAVIND_RUN_STEPS.md
+# Impeccable design skill (installed locally, not committed)
+.claude/skills/
+skills-lock.json
 
 # CARLA work (this branch): results, videos and the two model files the car pipeline needs are
 # tracked. Inference caches, the single demo clips and the recorded frames (data/carla*, 2.7 GB,
