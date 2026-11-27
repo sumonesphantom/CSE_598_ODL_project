@@ -69,11 +69,12 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
 - [x] Detection eval harness (`src/bolero/detection_eval.py`: frozen DETR + COCO-style mAP, 5 tests; `scripts/run_detection.py`). DAWN results, frozen COCO DETR (`results/detection/`):
       | Condition | Method | mAP50 | mAP50-95 | Person recall |
       |---|---|---|---|---|
-      | Rain (200 img, 1,588 boxes) | none | **0.481** | **0.314** | 0.89 |
-      | | autocontrast / clahe / unsharp | 0.480 / 0.471 / 0.462 | 0.297 / 0.294 / 0.284 | 0.93 / 0.89 / 0.93 |
-      | Dust (323 img, 2,235 boxes) | none | **0.457** | **0.287** | 0.84 |
-      | | autocontrast / clahe / unsharp | 0.381 / 0.376 / 0.375 | 0.235 / 0.229 / 0.230 | 0.78 / 0.76 / 0.77 |
-      - No preprocessing helps; under dust every baseline costs ~8 pp mAP50 and 6–8 pp person recall (same direction as Li et al. CVPR 2019). Trucks / buses are the weak classes (AP50 0.26–0.40 under dust)
+      | Rain (200 img, 1,588 boxes) | none | 0.481 | 0.314 | 0.89 |
+      | | autocontrast / clahe / unsharp | **0.490** / 0.480 / 0.472 | **0.317** / 0.312 / 0.304 | 0.93 / 0.93 / 0.93 |
+      | Dust (323 img, 2,235 boxes) | none | 0.457 | 0.287 | 0.83 |
+      | | autocontrast / clahe / unsharp | **0.470** / 0.464 / 0.455 | **0.294** / 0.289 / 0.285 | 0.85 / 0.82 / 0.82 |
+      - Corrected 2026-11-19 (Aravind's branch): the first version of this table had an EXIF orientation bug. 36 of the 323 DAWN sand images (and 4 rain) are mirrored by their EXIF tag and their VOC boxes match the mirrored view; the `none` method saw it, the baselines did not. The old dust row (0.381 / 0.376 / 0.375) showed preprocessing costing 8 pp; with the fix, auto-contrast and CLAHE help slightly on both conditions and unsharp is neutral. `none` is unchanged (0.481 / 0.457), which confirms the fix touches only the baselines. Output now in `results/detection_dawn/`
+      - ~~No preprocessing helps; under dust every baseline costs ~8 pp mAP50 and 6–8 pp person recall~~ (EXIF artifact, see above). Corrected: auto-contrast is the best method on both conditions (+0.9 pp rain, +1.3 pp dust mAP50), the others are within ±1 pp of none, so the Li et al. (CVPR 2019) "preprocessing hurts" result is not reproduced here. Trucks / buses are still the weak classes (AP50 0.26–0.40), bicycles worst under dust (0.20)
 - [ ] YOLO baseline for the detection harness (`ultralytics` not installed; add it to requirements and a `YOLODetector` next to `FrozenDetector`)
 - [ ] Person miss rate at a fixed alert budget on DAWN (abstain-and-alert for detection, now that the harness exists)
 - [x] Add `src/bolero/conformal.py`: split-conformal threshold for the perturbation gate (target clean false-alarm rate, e.g. ≤5%) replacing the fixed 0.6 in `detection.py`. `ConformalGate` is a drop-in for the detector; use it in Stage 3 with `run_restoration.py --conformal-gate results/conformal/headline.json`
@@ -114,13 +115,87 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
 
 ## Aravind: Rain + dust data (physics, generative, real)
 - [x] DAWN downloaded (done by Venkat, 2026-11-11): Rain (200 images) + Sand (323) from Mendeley 10.17632/766ygrbt8y.3 into `data/dawn/` (git-ignored). License per Mendeley metadata: **CC BY-NC 3.0** (attribute, non-commercial; fine for coursework, cite the DAWN paper)
-- [ ] XWOD: needs a Kaggle API key (`~/.kaggle/kaggle.json`), then `kaggle datasets download kuantinglai/exwod` into `data/xwod/`. Confirm its research-use license, and check the loader against the real layout
-- [x] Loaders (`src/bolero/weather_data.py`, tested): `load_dawn()` (VOC XML; Sand → `dust`), `load_xwod()` / `load_yolo_dataset()` (Ultralytics YOLO layout, assumed until XWOD is downloaded), `load_condition_folders()` for SDSI / VIRADA (one folder per label). SDSI / VIRADA themselves are not downloaded yet
+- [x] XWOD downloaded (2026-11-19): v1.1 from Kaggle `kuantinglai/exwod` into `data/xwod/XWOD_dataset.v1.1/XWOD_dataset.v1.1/` (git-ignored, 1.4 GB). License **CC BY-NC-SA 4.0**, non-commercial academic research only; no redistribution of the full dataset; cite the XWOD paper. v1.1 anonymizes faces, plates and other PII; boxes and splits are unchanged from v1.0
+      - Real layout differs from the assumed one: `data.v1.1.yaml`, `<split>.v1.1/{images,labels}/`, splits `train` / `valid` / `test`, 7 conditions in the filename (heavy_rain, dust, fog, snow, flooding, tornado, wildfire), class `bike` for bicycle. Loader fixed and tested for all of it
+      - Two loader bugs fixed: `"rain" in name` matched the "rain" in "train", tagging every training image (all 5,945) as rain; and `bike` was silently dropped. Boxes are now clipped to the image (91 ran past the edge)
+      - Loaded counts match the paper: rain 301 / 106 / 258 and dust 285 / 130 / 145 images (train / valid / test), 665 rain and 560 dust in total. Fog (306) is dropped, as it is not in the weather taxonomy
+      - Frozen COCO DETR on the XWOD test split (`python scripts/run_detection.py --datasets xwod --out results/detection_xwod`):
+        | Condition | Method | mAP50 | mAP50-95 | Person recall |
+        |---|---|---|---|---|
+        | Rain (258 img, 851 boxes) | none | 0.252 | 0.141 | 0.58 |
+        | | autocontrast / clahe / unsharp | 0.259 / 0.250 / 0.244 | 0.145 / 0.141 / 0.138 | 0.50 / 0.58 / 0.50 |
+        | Dust (145 img, 963 boxes) | none | 0.446 | 0.273 | 0.85 |
+        | | autocontrast / clahe / unsharp | 0.508 / 0.443 / 0.473 | 0.286 / 0.273 / 0.274 | 0.86 / 0.86 / 0.85 |
+        - XWOD rain is much harder for DETR than DAWN rain (mAP50 0.25 vs 0.48). Rain has only 12 test persons, so person recall moves in steps of 1/12
+        - Auto-contrast is the only baseline that helps on both conditions (dust mAP50 +6.2 pp, rain +0.7 pp). No confidence intervals here; see the degradation comparison below
+      - EXIF orientation bug fixed in `run_detection.py` (new `weather_data.open_rgb`): 35 XWOD images carry an EXIF orientation tag (33 train, 2 dust test) and their boxes match the oriented view. transformers' pipeline applies the tag to a PIL image from disk but not to an array, so the `none` method saw the oriented image and every baseline saw the raw one. On XWOD dust this understated each baseline by about 2 pp mAP50 (autocontrast 0.489 → 0.508) and made baselines look like they lower recall (0.67 → 0.72 after the fix)
+      - The same bug affected the DAWN table in Venkat's section (36 mirrored sand images); it is corrected there
+- [x] Loaders (`src/bolero/weather_data.py`, tested): `load_dawn()` (VOC XML; Sand → `dust`), `load_xwod()` / `load_yolo_dataset()` (XWOD v1.1 layout, see above; plain Ultralytics layout also accepted), `load_condition_folders()` for SDSI / VIRADA (one folder per label). SDSI / VIRADA themselves are not downloaded yet
 - [x] Physics-based weather in `perturbations.py` (`WEATHER`, opt-in; not in `ALL_PERTURBATIONS`, so earlier results and the trained detector are unchanged): `rain_streaks`, `rain_mist` (depth haze I·t + A·(1−t), t = e^(−β·d), plus streaks), `rain_lens` (refracting, defocused drops), `dust_haze` (yellow-brown airlight, β per channel R 0.8 / G 1.0 / B 1.35 so blue fades first, plus contrast loss), `dust_storm` (dense haze + wind-blown sand). Names map onto the `weather` taxonomy; usable via `--perturbations` in `run_diagnostic.py` / `run_decider_compare.py` and `conditions.iter_samples`. 4 tests
-- [ ] Measure the classifier drop on the weather set: `python scripts/run_diagnostic.py --perturbations rain_streaks rain_mist rain_lens dust_haze dust_storm --per-class 20 --out results/diagnostic_weather`
-- [ ] Generative degradation: heavy rain / dust storm versions of clean images (InstructPix2Pix or SDXL img2img). Control severity with edit strength. Keep an image only if the label survives (clean-image prediction / CLIP similarity / DETR boxes still match)
-- [ ] Compare physics-based, generative and real (XWOD/DAWN) degradation on the same detector. Which synthetic one predicts real-data performance best?
-- [ ] Retrain the RF condition detector on SDSI / VIRADA so it recognizes real rain and dust
+- [x] Classifier drop on the weather set (2026-11-19): `python scripts/run_diagnostic.py --perturbations rain_streaks rain_mist rain_lens dust_haze dust_storm --per-class 20 --out results/diagnostic_weather`. Frozen ResNet-50, 200 val images (20 per class), clean accuracy 82.5%. Accuracy change vs clean in pp, 95% bootstrap CI over images:
+      | Effect | Level 1 | Level 2 | Level 3 | All levels |
+      |---|---|---|---|---|
+      | rain_streaks | -10.5 | -13.0 | -21.5 | -15.0 [-19.3, -11.2] |
+      | rain_mist | -14.0 | -35.5 | -54.5 | -34.7 [-39.8, -30.0] |
+      | rain_lens | -7.5 | -25.0 | -52.5 | -28.3 [-32.8, -24.2] |
+      | dust_haze | -2.5 | -5.5 | -9.5 | -5.8 [-10.2, -1.7] |
+      | dust_storm | -18.5 | -48.0 | -76.5 | -47.7 [-52.8, -42.3] |
+      - Weather is about twice as damaging as the original 14 perturbations: -26.3 pp [-30.0, -22.6] overall (rain -26.0, dust -26.8) vs -14.6 pp for the original set on the full val split. Only the dust_haze level 1 interval includes zero
+      - Severities are uneven across effects: dust_storm level 3 leaves 6% accuracy (below the 10% chance level), while dust_haze level 3 costs only 9.5 pp. If levels should mean the same thing across effects, recalibrate them (e.g. against XWOD mAP) before the physics/generative/real comparison
+- [x] Generative degradation (2026-11-19): `python scripts/make_generative_weather.py --source coco --n 300` and `--source imagenette --per-class 20`, then `python scripts/run_generative_diagnostic.py` → `data/generative/` (git-ignored), `results/generative_imagenette/`
+      - InstructPix2Pix (`timbrooks/instruct-pix2pix`, MIT, fp16, 20 steps), prompts "make it raining heavily" / "make it a sandstorm". Severity = edit strength: image guidance 2.0 / 1.75 / 1.5 for levels 1 / 2 / 3 (lower = stronger), text guidance 7.5. Chosen on 3 pilots: below 1.5 the model replaces the scene (new skyline, new people, bus gone) instead of adding weather. Edits are made at a 512 short side and resized back, so boxes stay valid. ~3 s per edit on the RTX 5080 (1,800 COCO edits in 108 min, 1,200 Imagenette in 60 min). Code in `src/bolero/generative.py`
+      - "Label survives" is judged by CLIP (ViT-B/32) similarity to the clean image, never by the classifier or detector under test (filtering on "the detector still finds the boxes" would drop the hard cases and inflate scores). Cutoff = 5th percentile of the physics effects' similarity on the same images (0.604 COCO, 0.593 Imagenette). It removes invented scenes but cannot check single objects: some kept edits lost a car or a dog. Results are reported for all edits and for kept edits
+      - What it produces: dust is a convincing orange haze that gets heavy fast; rain is weak, mostly wet roads and a cooler tint, with few visible streaks. Kept rate COCO dust 94 / 88 / 72%, rain 100 / 99 / 94%; Imagenette dust 78 / 58 / 47%, rain 99 / 95 / 80%
+      - Classifier (frozen ResNet-50, same 200 Imagenette images as the physics run above, clean 82.5%), accuracy change in pp, 95% bootstrap CI:
+        | | Level 1 | Level 2 | Level 3 | All levels |
+        |---|---|---|---|---|
+        | generative rain, all edits | -9.5 | -15.0 | -42.0 | -22.2 [-27.0, -17.0] |
+        | generative rain, kept | -8.1 | -11.1 | -29.6 | -15.7 [-20.3, -11.0] |
+        | generative dust, all edits | -36.0 | -54.5 | -65.5 | -52.0 [-58.2, -46.3] |
+        | generative dust, kept | -21.8 | -37.4 | -50.5 | -34.0 [-40.9, -27.2] |
+        | physics rain / dust (above) | | | | -26.0 / -26.8 |
+      - Generative dust is about twice as damaging as physics dust, and most of the gap is content loss: even kept edits cost 22 pp at level 1. Imagenette images are 160-pixel close-ups upscaled to 512, where a sandstorm easily swallows the object. On COCO street scenes (detection, below) generative dust is milder than physics dust_storm
+- [x] Compare physics-based, generative and real degradation on the same detector (2026-11-19): `python scripts/run_degradation_compare.py` → `results/degradation_compare/` (`summary.csv`, `predict.csv`, `kid.csv`). Frozen COCO DETR, every set with none + the 3 baselines; mAP50 CIs are 95% image bootstrap (500)
+      - Sets: 300 clean COCO val2017 traffic scenes (every image has a vehicle, no crowd boxes); the same 300 through the 5 physics effects × 3 levels and through InstructPix2Pix rain / dust × 3 levels; real XWOD test and DAWN rain / dust. Clean COCO mAP50 0.708 [0.672, 0.749]
+      - mAP50 drop vs clean COCO (level 1 / 2 / 3): rain_streaks -0.10 / -0.15 / -0.21; rain_mist -0.31 / -0.52 / -0.64; rain_lens -0.04 / -0.08 / -0.17; dust_haze -0.09 / -0.18 / -0.31; dust_storm -0.42 / -0.63 / -0.66; generative rain -0.07 / -0.08 / -0.17; generative dust -0.15 / -0.23 / -0.35. Real: XWOD rain 0.252, XWOD dust 0.446, DAWN rain 0.481, DAWN dust 0.457
+      - Reference: the other real dataset of the same condition, scored the same way. A synthetic set should not be expected to beat it
+        | Predicts → | XWOD rain | DAWN rain | XWOD dust | DAWN dust |
+        |---|---|---|---|---|
+        | Class profile (Spearman of per-class AP50, mean over levels): other real set | **0.80** | **0.80** | **0.89** | **0.89** |
+        | physics (best effect) | -0.27 (streaks) | 0.47 (mist, streaks) | 0.31 (storm) | -0.03 (storm) |
+        | generative | -0.40 | -0.30 | 0.05 | -0.33 |
+        | Same best method as real (share of levels): other real set | 1 | 1 | 1 | 1 |
+        | physics haze-type (rain_mist / dust_haze, dust_storm) | 1 | 1 | 1 | 1 |
+        | generative | 0.33 | 0.33 | **0** | **0** |
+        | Looks like real (CLIP KID ×1000, lower = closer; clean COCO 2.14 / 1.41 / 1.56 / 1.75): other real set | 1.01 | 1.01 | 0.24 | 0.24 |
+        | best physics level | 1.35 (mist) | 0.93 (mist) | 1.47 (haze) | 1.53 (haze) |
+        | best generative level | 1.62 | 0.99 | 1.22 | 1.14 |
+      - **No synthetic degradation predicts real performance nearly as well as a second real dataset does.** The two real sets agree on which classes suffer (0.80-0.89); no synthetic source gets above 0.47, most are near zero or negative
+      - Physics haze-type effects (rain_mist, dust_haze / dust_storm) are the most useful proxy: they always pick the method that is best on real data (auto-contrast), and rain_mist / rain_streaks give the best class profile for DAWN rain. Lens drops and generative edits are the weakest
+      - Generative dust **looks** the most like real dust (lowest KID of any synthetic set) but **behaves** the least like it: it never picks auto-contrast and ranks classes against the real order. Looking realistic is not the same as degrading a detector realistically
+      - Matching difficulty is not informative: most sources come within 0.06 of a real mAP50 at their best-matching level (dust_storm 0.16-0.17; on XWOD rain only rain_mist gets within 0.07), because the level can be chosen after the fact. XWOD rain (0.25) and DAWN rain (0.48) themselves differ by 0.23
+      - On real data only dust benefits from preprocessing: auto-contrast +6.2 pp [2.3, 14.9] on XWOD dust, +1.3 pp [0.3, 2.3] on DAWN dust; on rain no baseline's interval excludes zero
+      - Generative edits that change the scene (CLIP similarity to the clean image below 0.604, the 5th percentile of the physics effects) are reported separately as `kept`. The filter removes invented scenes (similarity 0.38-0.45) but is coarse near the cutoff: some kept edits lost a car or a dog, and some rejected ones are fine. With a stricter cutoff (0.75, `results/degradation_compare_clip075/`) generative dust level 3 loses only 0.17 mAP50 instead of 0.35, so much of its "weather damage" is content destruction. Conclusions above hold at both cutoffs
+      - Caveats: COCO scenes are the detector's training domain, so synthetic sets start easier than real ones; class profiles use only 5-6 classes; auto-contrast is best on every real set, so "same best method" mostly asks whether a source agrees that auto-contrast helps
+- [x] Retrain the RF condition detector on real rain and dust (2026-11-19, VIRADA done; **SDSI still open**): `python scripts/prepare_virada.py && python scripts/train_weather_detector.py` → `results/weather_detector/`
+      - VIRADA (Zenodo 4715681, CC BY 4.0) is 167 GB of video, so `prepare_virada.py` reads the Crossing2 zips over HTTP range requests and fetches only the chosen clips (8.6 MB of frames kept). A clip is used only if every minute has the same label from both rain sensors: all 46 such rain clips (3 days) plus 92 dry clips, half from the rain days; 3 frames per clip. VIRADA rain is wet, reflective asphalt, not visible streaks
+      - SDSI has no public download (paper: Remote Sensing 15(21):5227, 2023); the MDPI page blocks automated reading. Needs a request to the authors. The script takes `--sdsi data/sdsi` (folders storm/ clear/) once it arrives
+      - Same features, same random forest (threshold 0.6), same 510 clean images (300 COCO traffic scenes not in the comparison sample + VIRADA dry frames from training days); only the source of rain / dust examples differs. Synthetic = the 5 physics effects at levels 1-3 on the clean pool. Real = XWOD train + valid (479 rain incl. VIRADA training days, 415 dust). VIRADA is split by day (test: the last rain day + alternate dry-only days)
+      - Share of held-out images routed correctly (decided label = truth; for clean sets, the share not falsely alarmed), 95% Wilson CIs in `summary.csv`:
+        | Test set | Synthetic-trained | Real-trained | Combined |
+        |---|---|---|---|
+        | DAWN rain (dataset never trained on) | 0.64 | **0.90** | 0.95 |
+        | DAWN dust (dataset never trained on) | 0.44 | **0.96** | 0.92 |
+        | XWOD rain (test split) | 0.57 | 0.30 | 0.68 |
+        | XWOD dust (test split) | 0.15 | 0.40 | 0.36 |
+        | VIRADA rain (held-out day) | **0.00** | 0.20 | 0.14 |
+        | VIRADA clean (held-out days) | 0.88 | 0.76 | 0.70 |
+        | COCO clean | 0.63 | **0.96** | 0.56 |
+        | Imagenette clean (source never trained on) | 0.53 | **0.96** | 0.51 |
+      - The synthetic-trained detector says "rain" to almost anything: 60% of clean COCO, 73% of real XWOD dust, 78% of clean Imagenette (top-1). It never recognizes VIRADA's wet-road rain. Adding synthetic data to real data (combined) brings those false alarms back (only 51-56% of clean COCO and Imagenette images pass)
+      - The real-trained detector generalizes to DAWN, a dataset it never saw, and keeps 96% of clean images from an unseen source clean, so it is recognizing weather rather than "not one of my clean datasets". Its weak spots: XWOD dust is often called rain (45%), XWOD rain is mostly found (top-1 0.78) but below the 0.6 confidence bar, and VIRADA rain is hard for every detector
+      - Caveats: VIRADA rain comes from one crossing (2 crops of one camera) on 3 days; real dust training data is XWOD only until SDSI arrives; the synthetic training set is heavily imbalanced (4,590 rain / 3,060 dust vs 510 clean; the forest's class weighting only partly offsets it)
+      - Recommendation: route on the real-trained detector, not one trained on physics perturbations. Physics weather is useful to stress the classifier / detector, not to teach a detector what real weather looks like
 
 ## Sachin: Decision engine (Jev alternatives) + VLM
 - [x] Read the in-context learning paper from the professor (internal, do not share). The instruction taxonomy is mapped in the README
