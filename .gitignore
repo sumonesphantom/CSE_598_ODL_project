@@ -59,3 +59,6 @@ progress presentation/
 docs/pipeline_status.html
 # Run notes sent to teammates (not in the repo)
 ARAVIND_RUN_STEPS.md
+# Impeccable design skill (installed locally, not committed)
+.claude/skills/
+skills-lock.json

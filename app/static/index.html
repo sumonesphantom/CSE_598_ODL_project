@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bolero · Detection in heavy rain and dust</title>
+  <link rel="preload" href="/static/fonts/overpass-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-rain" viewBox="0 0 24 24"><path d="M7 15.5a4.5 4.5 0 1 1 1.1-8.86A5.5 5.5 0 0 1 18.6 9 3.25 3.25 0 0 1 17.5 15.5"/><path d="M8 18.5l-1 2.5M12 17.5l-1.2 3M16 18.5l-1 2.5"/></symbol>
+      <symbol id="i-dust" viewBox="0 0 24 24"><path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h7"/></symbol>
+      <symbol id="i-clear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 2.8 19.5h18.4L12 3.5Z"/><path d="M12 10v4.5M12 17.2v.3"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-11"/></symbol>
+    </defs>
+  </svg>
+
+  <header class="bar">
+    <div class="brand">
+      <span class="brand-name">Bolero</span>
+      <span class="brand-sub">Detection in heavy rain and dust</span>
+    </div>
+    <p class="status" id="status" role="status"><span class="dot"></span><span id="status-text">Loading models…</span></p>
+  </header>
+
+  <main class="work">
+    <section class="stage" aria-label="Frame">
+      <div class="viewer" id="viewer" data-mode="raw">
+        <div class="frame" id="frame">
+          <img id="img-raw" alt="">
+          <div class="reveal" id="reveal"><img id="img-restored" alt=""></div>
+          <svg class="boxes" id="boxes" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
+          <div class="handle" id="handle" hidden><span></span></div>
+        </div>
+        <div class="viewer-empty" id="viewer-empty">
+          <p id="empty-text">Pick a frame below, or drop a photo here.</p>
+        </div>
+        <div class="drop" id="drop" hidden><p>Drop to run this photo</p></div>
+      </div>
+
+      <div class="viewer-controls">
+        <div class="seg" role="radiogroup" aria-label="View" id="view-seg">
+          <button role="radio" aria-checked="true" data-view="raw">Raw</button>
+          <button role="radio" aria-checked="false" data-view="restored" disabled>Restored</button>
+          <button role="radio" aria-checked="false" data-view="compare" disabled>Compare</button>
+        </div>
+        <div class="toggles">
+          <label class="check"><input type="checkbox" id="t-det" checked> Detections</label>
+          <label class="check"><input type="checkbox" id="t-gt"> Ground truth</label>
+        </div>
+        <ul class="legend" id="legend" hidden>
+          <li><i class="sw sw-det"></i>Detected</li>
+          <li class="only-restored" hidden><i class="sw sw-add"></i>New after restoring</li>
+          <li class="only-restored" hidden><i class="sw sw-rem"></i>Gone after restoring</li>
+          <li class="only-gt" hidden><i class="sw sw-gt"></i>Labeled object</li>
+        </ul>
+      </div>
+
+      <div class="tray">
+        <div class="tray-head">
+          <h2>Frames</h2>
+          <span class="tray-note">DAWN, real rain and sandstorm photos</span>
+          <label class="btn btn-quiet upload">
+            <svg class="ic"><use href="#i-upload"/></svg> Upload a photo
+            <input type="file" id="file" accept="image/*" hidden>
+          </label>
+        </div>
+        <ul class="thumbs" id="thumbs"></ul>
+      </div>
+    </section>
+
+    <aside class="rail" aria-label="Pipeline" aria-live="polite">
+      <div class="sign" id="sign" data-kind="idle">
+        <svg class="sign-ic"><use href="#i-clear"/></svg>
+        <div>
+          <p class="sign-title" id="sign-title">No frame yet</p>
+          <p class="sign-sub" id="sign-sub">Results appear here</p>
+        </div>
+      </div>
+
+      <div class="error" id="error" hidden>
+        <p id="error-text"></p>
+        <button class="btn btn-quiet" id="retry">Try again</button>
+      </div>
+
+      <ol class="steps" id="steps">
+        <li class="step" id="step-decide">
+          <div class="step-head"><h3>Decide</h3><span class="chip" id="decide-chip"></span></div>
+          <p class="step-note" id="decide-source">Is the view rain, dust, or clear?</p>
+          <div class="bars" id="decide-bars"></div>
+          <div class="seg seg-small" role="radiogroup" aria-label="Condition" id="cond-seg">
+            <button role="radio" aria-checked="true" data-cond="">Auto</button>
+            <button role="radio" aria-checked="false" data-cond="rain">Rain</button>
+            <button role="radio" aria-checked="false" data-cond="dust">Dust</button>
+            <button role="radio" aria-checked="false" data-cond="clean">Clear</button>
+          </div>
+        </li>
+
+        <li class="step" id="step-restore">
+          <div class="step-head"><h3>Restore</h3><span class="chip" id="restore-chip"></span></div>
+          <label class="field">
+            <span class="sr">Restoration method</span>
+            <select id="restorer"></select>
+          </label>
+          <p class="step-note" id="restore-why"></p>
+        </li>
+
+        <li class="step" id="step-detect">
+          <div class="step-head"><h3>Detect</h3><span class="chip" id="detect-chip"></span></div>
+          <table class="counts" id="counts">
+            <thead><tr><th scope="col">Class</th><th scope="col">Raw</th><th scope="col">Restored</th></tr></thead>
+            <tbody><tr class="empty"><td colspan="3">Waiting for a frame</td></tr></tbody>
+          </table>
+          <p class="step-note" id="known"></p>
+        </li>
+
+        <li class="step" id="step-changes">
+          <div class="step-head"><h3>What restoring changed</h3></div>
+          <dl class="changes" id="changes"></dl>
+        </li>
+      </ol>
+    </aside>
+  </main>
+</body>
+</html>
