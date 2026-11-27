@@ -1,0 +1,95 @@
+{
+  "config": {
+    "per_class": 5,
+    "max_per_condition": 20,
+    "taxonomy": "weather",
+    "perturbations": [
+      "rain_streaks",
+      "rain_mist",
+      "rain_lens",
+      "dust_haze",
+      "dust_storm"
+    ],
+    "levels": [
+      1,
+      2,
+      3
+    ],
+    "data_root": "data/imagenette2-320",
+    "seed": 42,
+    "deciders": [
+      "majority,rf,jev,clef-flash,pplx-decider-flash,d1,joey-1"
+    ],
+    "evidence_mode": "stats+image",
+    "include_detector": false,
+    "include_candidates": false,
+    "exemplars": 0,
+    "max_calls": 20000,
+    "max_cost": 2.0,
+    "workers": 4,
+    "fit_severity_per_class": 10,
+    "conformal": null,
+    "out": "results/deciders_weather/main",
+    "limit": 0,
+    "rf_detector": "results/deciders_weather/detector320/detector.joblib",
+    "severity_model": "results/deciders_weather/severity.joblib",
+    "hf_model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "deciders_resolved": [
+      {
+        "name": "majority",
+        "type": "ConstantDecider",
+        "hosted": false
+      },
+      {
+        "name": "rf",
+        "type": "RFDecider",
+        "hosted": false,
+        "taxonomy": "weather"
+      },
+      {
+        "name": "jev",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "typesafe/jev-1.14",
+        "taxonomy": "weather",
+        "evidence_mode": "stats+image"
+      },
+      {
+        "name": "clef-flash",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "cloudflare/clef-flash",
+        "taxonomy": "weather",
+        "evidence_mode": "stats+image"
+      },
+      {
+        "name": "pplx-decider-flash",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "perplexity/pplx-decider-flash-v1.2",
+        "taxonomy": "weather",
+        "evidence_mode": "stats+image"
+      },
+      {
+        "name": "d1",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "liquid/d1",
+        "taxonomy": "weather",
+        "evidence_mode": "stats+image"
+      },
+      {
+        "name": "joey-1",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "baseten/joey-1",
+        "taxonomy": "weather",
+        "evidence_mode": "stats+image"
+      }
+    ]
+  },
+  "started": "2026-11-27T18:10:31.132403+00:00",
+  "finished": "2026-11-27T18:13:12.028343+00:00",
+  "wall_seconds": 160.87368245799735,
+  "stopped": null
+}
