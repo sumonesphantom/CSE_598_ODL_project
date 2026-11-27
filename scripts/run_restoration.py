@@ -1,3 +1,4 @@
+
 """Stage 3 - restoration study: can preprocessing win back what perturbation took?
 
 For each val image, each perturbation x severity, and the clean image itself,
@@ -11,23 +12,14 @@ the perturbed input is passed through each restoration method and re-classified:
   cue:<name>             one depth-derived contextual cue (see depth_source)
   detector+cue:<name>    detector_classical followed by the cue (perturbed depth)
 
-Each cue runs with up to three depth maps, recorded in the `depth_source` column:
-
-  perturbed    re-estimated on the perturbed input. The deployable setting and
-               the main result.
-  clean        the clean image's depth. Idealized: unavailable at deployment.
-  mismatched   the clean depth of a different image (another class). A control:
-               if a cue still helps with an unrelated depth map, the gain comes
-               from the image operation, not from depth information.
-
-Strengths come from results/tuning/strengths.json (scripts/tune_strengths.py,
-chosen on the train split); hand-set defaults are used if that file is missing.
+Classical restoration plans are loaded from results/tuning/plans.json, generated
+by scripts/tune_plans.py using development data. Hand-set plans are used if
+the tuning file is missing.
 
 Outputs (in --out):
   records.csv.gz   one row per image x perturbation x severity x method x depth source
-  summary.csv      per perturbation x severity x method x depth source: accuracy against
-                   ground truth, agreement with the clean prediction, fixes and breaks
-                   vs. the perturbed input, depth agreement, latency
+  summary.csv      per perturbation x severity x method x depth source
+  run.json         experiment configuration, including selected plan variants
 """
 
 import argparse
@@ -66,7 +58,10 @@ def timed(fn, *args):
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument("--per-class", type=int, default=50)
     parser.add_argument("--perturbations", nargs="*", default=list(ALL_PERTURBATIONS),
                         choices=list(ALL_PERTURBATIONS))
@@ -87,14 +82,24 @@ def main() -> None:
                         help="headline.json from scripts/run_conformal.py; replaces the fixed threshold")
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--device", default=None)
-    parser.add_argument("--backbone", default="resnet50",
-                        help="key in config.BACKBONES or a Hugging Face ImageNet-1k model id")
+    parser.add_argument(
+        "--backbone",
+        default="resnet50",
+        help="key in config.BACKBONES or a Hugging Face ImageNet-1k model id",
+    )
     parser.add_argument("--seed", type=int, default=SEED)
-    parser.add_argument("--out", type=Path, default=RESULTS_DIR / "restoration")
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=RESULTS_DIR / "restoration",
+    )
     args = parser.parse_args()
 
     if not args.detector.exists():
-        raise SystemExit(f"{args.detector} not found. Run scripts/train_detector.py first.")
+        raise SystemExit(
+            f"{args.detector} not found. Run scripts/train_detector.py first."
+        )
+
     if args.combo_cues and "perturbed" not in args.depth_sources:
         raise SystemExit("--combo-cues needs the 'perturbed' depth source.")
     if args.structure_source != "depth" and set(args.depth_sources) != {"perturbed"}:
@@ -118,33 +123,65 @@ def main() -> None:
             return estimator(x)
         return structure_map(segmenter.entity_mask(x), x.shape[:2])
 
-    conditions = [(CLEAN, 0)] + [(name, level) for name in args.perturbations for level in LEVELS]
+    conditions = [(CLEAN, 0)] + [
+        (name, level)
+        for name in args.perturbations
+        for level in LEVELS
+    ]
+
     needs_depth = bool(args.cues or args.combo_cues)
     records = list_images("val", per_class=args.per_class, seed=args.seed)
-    # Records are grouped by class, so an offset of half the list pairs each image
-    # with a donor from a different class for the mismatched-depth control.
-    donor_of = {r.image_id: records[(i + len(records) // 2) % len(records)] for i, r in enumerate(records)}
+
+    # Records are grouped by class, so an offset of half the list pairs each
+    # image with a donor from a different class for the mismatched-depth control.
+    donor_of = {
+        record.image_id: records[(i + len(records) // 2) % len(records)]
+        for i, record in enumerate(records)
+    }
 
     for record in tqdm(records, desc="images"):
         clean = load_image(record.path)
         clean_depth = depth_cache.get(record, clean)
-        base = {"image_id": record.image_id, "wnid": record.wnid,
-                "class_name": record.class_name, "label_index": record.label_index}
+
+        base = {
+            "image_id": record.image_id,
+            "wnid": record.wnid,
+            "class_name": record.class_name,
+            "label_index": record.label_index,
+        }
+
         if "mismatched" in args.depth_sources and args.cues:
             donor = donor_of[record.image_id]
-            mismatched_depth = resize_depth(depth_cache.get(donor, load_image(donor.path)), clean.shape[:2])
+            mismatched_depth = resize_depth(
+                depth_cache.get(donor, load_image(donor.path)),
+                clean.shape[:2],
+            )
 
         def emit(meta: dict, image: np.ndarray, restore_ms: float) -> None:
-            predictor.add({**base, "depth_source": NO_DEPTH, "strength": np.nan, **meta,
-                           "restore_ms": restore_ms, "psnr": psnr(clean, image), "ssim": ssim(clean, image)},
-                          image)
+            predictor.add(
+                {
+                    **base,
+                    "depth_source": NO_DEPTH,
+                    "strength": np.nan,
+                    **meta,
+                    "restore_ms": restore_ms,
+                    "psnr": psnr(clean, image),
+                    "ssim": ssim(clean, image),
+                },
+                image,
+            )
 
         for name, level in conditions:
             if name == CLEAN:
                 x = clean
             else:
-                x = ALL_PERTURBATIONS[name](clean, level, clean_depth,
-                                            rng_for(record.image_id, name, level, args.seed))
+                x = ALL_PERTURBATIONS[name](
+                    clean,
+                    level,
+                    clean_depth,
+                    rng_for(record.image_id, name, level, args.seed),
+                )
+
             cond = {"perturbation": name, "level": level}
 
             depth_ms, perturbed_depth = 0.0, None
@@ -154,9 +191,14 @@ def main() -> None:
                                            if segmenter is None else np.nan)
 
             emit({**cond, "method": "none"}, x, 0.0)
-            if name != CLEAN and name not in HELD_OUT:  # held-out perturbations have no plan
-                oracle, ms = timed(restore, x, name)
-                emit({**cond, "method": "oracle_classical"}, oracle, ms)
+
+            if name != CLEAN and name not in HELD_OUT:
+                oracle, ms = timed(restore, x, name, plans)
+                emit(
+                    {**cond, "method": "oracle_classical"},
+                    oracle,
+                    ms,
+                )
 
             decision, detect_ms = timed(detector.decide, x)
             routed, restore_ms = timed(restore, x, decision.label, skip_plans)
@@ -166,29 +208,79 @@ def main() -> None:
 
             for baseline in args.baselines:
                 key = method_key("baseline", baseline)
-                out, ms = timed(apply_baseline, baseline, x, strengths[key])
-                emit({**cond, "method": key, "strength": strengths[key]}, out, ms)
+                out, ms = timed(
+                    apply_baseline,
+                    baseline,
+                    x,
+                    strengths[key],
+                )
+                emit(
+                    {
+                        **cond,
+                        "method": key,
+                        "strength": strengths[key],
+                    },
+                    out,
+                    ms,
+                )
 
-            depths = {"perturbed": (perturbed_depth, depth_ms), "clean": (clean_depth, 0.0)}
+            depths = {
+                "perturbed": (perturbed_depth, depth_ms),
+                "clean": (clean_depth, 0.0),
+            }
+
             if "mismatched" in args.depth_sources and args.cues:
                 depths["mismatched"] = (mismatched_depth, 0.0)
+
             for source in args.depth_sources if args.cues else []:
                 depth, d_ms = depths[source]
+
                 for cue in args.cues:
                     key = method_key("cue", cue)
-                    out, ms = timed(apply_cue, cue, x, depth, strengths[key])
-                    emit({**cond, "method": key, "depth_source": source, "strength": strengths[key]},
-                         out, d_ms + ms)
+                    out, ms = timed(
+                        apply_cue,
+                        cue,
+                        x,
+                        depth,
+                        strengths[key],
+                    )
+                    emit(
+                        {
+                            **cond,
+                            "method": key,
+                            "depth_source": source,
+                            "strength": strengths[key],
+                        },
+                        out,
+                        d_ms + ms,
+                    )
 
             for cue in args.combo_cues:
-                s = strengths[method_key("cue", cue)]
-                out, ms = timed(apply_cue, cue, routed, perturbed_depth, s)
-                emit({**cond, "method": f"detector+cue:{cue}", "depth_source": "perturbed", "strength": s,
-                      **detect_meta}, out, detect_ms + restore_ms + depth_ms + ms)
+                strength = strengths[method_key("cue", cue)]
+                out, ms = timed(
+                    apply_cue,
+                    cue,
+                    routed,
+                    perturbed_depth,
+                    strength,
+                )
+                emit(
+                    {
+                        **cond,
+                        "method": f"detector+cue:{cue}",
+                        "depth_source": "perturbed",
+                        "strength": strength,
+                        **detect_meta,
+                    },
+                    out,
+                    detect_ms + restore_ms + depth_ms + ms,
+                )
+
     predictor.flush()
 
     df = prefixed(predictor.rows, "out")
     save(df, args.out / "records.csv.gz")
+
     summary = summarize(df)
     save(summary, args.out / "summary.csv")
     (args.out / "run.json").write_text(json.dumps({
@@ -214,44 +306,106 @@ def summarize(df: pd.DataFrame) -> pd.DataFrame:
     """
     keys = ["image_id", "perturbation", "level"]
     ref = df[df["method"] == "none"].set_index(keys)
-    clean_ref = df[(df["perturbation"] == CLEAN) & (df["method"] == "none")].set_index("image_id")
+    clean_ref = df[
+        (df["perturbation"] == CLEAN) & (df["method"] == "none")
+    ].set_index("image_id")
+
     clean_acc = clean_ref["out_correct"].mean()
     rows = []
-    for (name, level, method, source), g in df.groupby(GROUP, sort=False):
-        before = ref.loc[pd.MultiIndex.from_frame(g[keys])]
-        clean_pred = clean_ref.loc[g["image_id"], "out_pred"].to_numpy()
-        b_ok, a_ok = before["out_correct"].to_numpy(bool), g["out_correct"].to_numpy(bool)
-        rows.append({
-            "perturbation": name, "level": level, "method": method, "depth_source": source,
-            "strength": g["strength"].iloc[0], "n": len(g),
-            "acc_clean": clean_acc,
-            "acc_perturbed": b_ok.mean(),
-            "acc_restored": a_ok.mean(),
-            "delta_pp": 100.0 * (a_ok.mean() - b_ok.mean()),
-            "recovery_rate": recovery_rate(clean_acc, b_ok.mean(), a_ok.mean()),
-            **transitions(b_ok, a_ok, before["out_pred"].to_numpy(), g["out_pred"].to_numpy(), clean_pred),
-            "changed_rate": (g["out_pred"].to_numpy() != before["out_pred"].to_numpy()).mean(),
-            "true_prob_shift": (g["out_true_prob"].to_numpy() - before["out_true_prob"].to_numpy()).mean(),
-            "depth_rank_corr": g["depth_rank_corr"].mean() if "depth_rank_corr" in g else np.nan,
-            "psnr": g["psnr"].replace(np.inf, np.nan).mean(),
-            "ssim": g["ssim"].mean(),
-            "restore_ms": g["restore_ms"].mean(),
-            "classify_ms": g["out_classify_ms"].mean(),
-        })
+
+    for (name, level, method, source), group in df.groupby(
+        GROUP,
+        sort=False,
+    ):
+        before = ref.loc[pd.MultiIndex.from_frame(group[keys])]
+        clean_pred = clean_ref.loc[
+            group["image_id"],
+            "out_pred",
+        ].to_numpy()
+
+        before_ok = before["out_correct"].to_numpy(bool)
+        after_ok = group["out_correct"].to_numpy(bool)
+
+        rows.append(
+            {
+                "perturbation": name,
+                "level": level,
+                "method": method,
+                "depth_source": source,
+                "strength": group["strength"].iloc[0],
+                "n": len(group),
+                "acc_clean": clean_acc,
+                "acc_perturbed": before_ok.mean(),
+                "acc_restored": after_ok.mean(),
+                "delta_pp": 100.0 * (
+                    after_ok.mean() - before_ok.mean()
+                ),
+                "recovery_rate": recovery_rate(
+                    clean_acc,
+                    before_ok.mean(),
+                    after_ok.mean(),
+                ),
+                **transitions(
+                    before_ok,
+                    after_ok,
+                    before["out_pred"].to_numpy(),
+                    group["out_pred"].to_numpy(),
+                    clean_pred,
+                ),
+                "changed_rate": (
+                    group["out_pred"].to_numpy()
+                    != before["out_pred"].to_numpy()
+                ).mean(),
+                "true_prob_shift": (
+                    group["out_true_prob"].to_numpy()
+                    - before["out_true_prob"].to_numpy()
+                ).mean(),
+                "depth_rank_corr": (
+                    group["depth_rank_corr"].mean()
+                    if "depth_rank_corr" in group
+                    else np.nan
+                ),
+                "psnr": group["psnr"].replace(
+                    np.inf,
+                    np.nan,
+                ).mean(),
+                "ssim": group["ssim"].mean(),
+                "restore_ms": group["restore_ms"].mean(),
+                "classify_ms": group["out_classify_ms"].mean(),
+            }
+        )
+
     return pd.DataFrame(rows)
 
 
 def summarize_overall(df: pd.DataFrame) -> pd.DataFrame:
     held_out = df["perturbation"].isin(HELD_OUT)
-    perturbed = df[(df["perturbation"] != CLEAN) & ~held_out]
+    perturbed = df[
+        (df["perturbation"] != CLEAN) & ~held_out
+    ]
     clean = df[df["perturbation"] == CLEAN]
     by = ["method", "depth_source"]
-    return pd.DataFrame({
-        "acc_on_perturbed": perturbed.groupby(by, sort=False)["out_correct"].mean(),
-        "acc_on_held_out": df[held_out].groupby(by, sort=False)["out_correct"].mean(),
-        "acc_on_clean": clean.groupby(by, sort=False)["out_correct"].mean(),
-        "restore_ms": df.groupby(by, sort=False)["restore_ms"].mean(),
-    }).reset_index()
+
+    return pd.DataFrame(
+        {
+            "acc_on_perturbed": perturbed.groupby(
+                by,
+                sort=False,
+            )["out_correct"].mean(),
+            "acc_on_held_out": df[held_out].groupby(
+                by,
+                sort=False,
+            )["out_correct"].mean(),
+            "acc_on_clean": clean.groupby(
+                by,
+                sort=False,
+            )["out_correct"].mean(),
+            "restore_ms": df.groupby(
+                by,
+                sort=False,
+            )["restore_ms"].mean(),
+        }
+    ).reset_index()
 
 
 if __name__ == "__main__":

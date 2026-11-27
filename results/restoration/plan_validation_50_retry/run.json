@@ -1,0 +1,45 @@
+{
+  "split": "val",
+  "images": 500,
+  "per_class": 50,
+  "seed": 42,
+  "strengths_file": "C:\\Users\\srohi\\VSCodeProjects\\CSE_598_ODL_project_bolero\\results\\tuning\\strengths.json",
+  "strength_status": "tuned",
+  "strengths": {
+    "cue:border_strengthening": 0.1,
+    "cue:depth_boundary_emphasis": 0.3,
+    "cue:entity_background_separation": 0.1,
+    "cue:shadow_reinforcement": 0.2,
+    "cue:contrast_luminance": 0.2,
+    "cue:thermal_injection": 0.1,
+    "baseline:unsharp": 0.1,
+    "baseline:autocontrast": 0.5,
+    "baseline:clahe": 0.1
+  },
+  "plans_file": "C:\\Users\\srohi\\VSCodeProjects\\CSE_598_ODL_project_bolero\\results\\tuning\\plans.json",
+  "plan_status": "tuned",
+  "plan_variants": {
+    "clean": "hand_set",
+    "region_removal": "pass_through",
+    "inversion": "hand_set",
+    "grayscale": "hand_set",
+    "low_contrast": "hand_set",
+    "darken": "hand_set",
+    "brighten": "hand_set",
+    "gaussian_blur": "hand_set",
+    "gaussian_noise": "bilateral",
+    "jpeg_compression": "hand_set",
+    "boundary_blur": "hand_set",
+    "boundary_erase": "pass_through",
+    "foreground_blur": "hand_set",
+    "foreground_occlusion": "pass_through",
+    "background_removal": "pass_through"
+  },
+  "depth_sources": [
+    "perturbed",
+    "clean",
+    "mismatched"
+  ],
+  "backbone": "resnet50",
+  "detector": "results\\detector_retrained\\detector.joblib"
+}
