@@ -6,6 +6,70 @@ CSE 598: Operationalizing Deep Learning (Fall 2026), group project.
 
 ---
 
+> ## This branch (`carla-drive`): the CARLA work
+>
+> Aravind, 2026-11-25 to 2026-11-26. This branch adds the CARLA simulator work on top of the
+> weather track (branch `Arvind`). The rest of this README describes the whole project and is
+> unchanged from `main`. When merging into `main`, drop this section.
+>
+> **Two studies:**
+>
+> | Study | Question | Write-up |
+> |---|---|---|
+> | Traffic-camera testbed | Is CARLA's weather a usable fourth source of rain and dust, next to the physics filters, InstructPix2Pix edits and real photos? | [CARLA.md](CARLA.md) |
+> | Driving study | Does our algorithm, running on a car's camera, make the car drive more safely in rain and dust? | [DRIVING.md](DRIVING.md) |
+>
+> **Key results:**
+> - **CARLA's built-in weather is a poor stand-in for real weather.** It barely hurts the
+>   detector, and a condition detector trained on it does not recognize real rain or dust.
+>   Use CARLA for viewpoint, geometry and true depth, not for weather appearance.
+> - **On the car, the pipeline works end to end in real time.**
+>   - Routing gets 85 % of video frames right and sends 9 % of clean frames to a repair.
+>   - Isolation is about 90 % precise, with about 10 % distance error.
+>   - The full pipeline runs at 16 frames/s.
+> - **The repair is the weak link.** No repair reliably improves detection on real rain or dust
+>   photos, including one trained through the frozen detector on real weather.
+> - **Driving, 736 simulated runs.**
+>   - With perfect perception the car never crashes.
+>   - With the car's detector and no repair it crashes in 29 % of the weather runs (only heavy
+>     rain mist and dust storms).
+>   - With our algorithm, 27 % (-2.5 percentage points, 95 % CI [-5.4, +0.4], not significant).
+>   - It halves crashes in moderate rain mist (58 % → 29 %), causes 3 crashes in light rain
+>     streaks, never brakes falsely and never harms clean driving.
+>
+> **Demo:**
+> - [`results/car_scenarios/demo/demo.mp4`](results/car_scenarios/demo/demo.mp4): the car
+>   without repair (left) beside the full algorithm (right) in 5 scenarios.
+> - [`results/car_live/live.mp4`](results/car_live/live.mp4): a 90 s live drive (weathered view
+>   beside the repaired view with the isolated objects).
+>
+> **Files on this branch:**
+>
+> | Path | What it is |
+> |---|---|
+> | `scripts/record_carla_weather.py`, `record_ego_drive.py` | Record traffic-camera scenes and car-camera drives (need a CARLA 0.9.16 server) |
+> | `scripts/run_degradation_compare.py`, `train_weather_detector.py` | Weather-track scripts with CARLA added as a source, and the car's condition detector (`combined_car`) |
+> | `scripts/run_car_routing.py`, `run_car_perception.py`, `run_car_real_check.py`, `run_car_live.py` | Driving study Phases 1-2: routing over time, repairs and isolation, real-photo check, live speed |
+> | `scripts/train_task_repair.py`, `run_car_repair.py` | The learned repair, and choosing repairs on real photos |
+> | `scripts/run_car_scenarios.py` | Phases 3-4: driving agent, scenarios, the 736-run experiment, analysis, demo video (`--stage demo --show`) |
+> | `src/bolero/ego.py` | Car camera, weather from depth (v1 and v2), ground truth |
+> | `src/bolero/car_perception.py` | Condition router, isolation (distance, in-path flag), camera model |
+> | `src/bolero/driving.py` | Brake policy, steering, per-run safety measures |
+> | `src/bolero/task_repair.py`, `learned_restoration.py`, `third_party/` | Repair models (learned repair; Restormer and InstructIR, MIT code) |
+> | `results/car_scenarios/` | Phase 4: `runs.csv` (every run), `traces/` (every run step by step), `outcomes.csv`, `paired.csv`, `by_effect.csv`, `by_scenario.csv`, `headline.json`, `check/` (Phase 3), `demo/demo.mp4` |
+> | `results/car_perception/`, `car_routing/`, `car_real_check/`, `car_live/` | Phases 1-2 results |
+> | `results/car_repair/`, `task_repair/` | The repair redo: real-photo choice, car-frame check, training log |
+> | `results/degradation_compare/`, `weather_detector/` | Traffic-camera testbed and condition-detector results |
+> | `results/weather_detector/detector_combined_car.joblib`, `data/cache/restoration/task_repair.pt` | The trained condition detector and learned repair, so the pipeline runs without retraining |
+> | `tests/test_carla.py`, `test_car_perception.py`, `test_driving.py` | Tests |
+>
+> **Not included:** the recorded CARLA frames (`data/carla/`, `data/carla_ego/`, 2.7 GB, too large
+> for GitHub; the record scripts regenerate them), and the Restormer and InstructIR weights
+> (downloaded and hash-checked on first use). Commands are in [DRIVING.md](DRIVING.md#reproduce)
+> and [CARLA.md](CARLA.md).
+
+---
+
 ## Contents
 
 1. [The question](#the-question)

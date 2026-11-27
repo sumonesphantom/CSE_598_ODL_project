@@ -1,0 +1,39 @@
+{
+  "settings": {
+    "detector": "maskrcnn",
+    "score": 0.9,
+    "repairers": {
+      "clean": "none",
+      "rain": "autocontrast",
+      "dust": "dcp_dehaze"
+    },
+    "router": "combined_car",
+    "alpha": 1.0,
+    "enter": 0.6,
+    "exit": 0.6
+  },
+  "max_side": 640,
+  "frames": 900,
+  "ms_median": {
+    "route": 0.031673999728809576,
+    "repair": 22.92041600048833,
+    "detect": 42.45440199974837,
+    "isolate": 0.0921970004128525,
+    "total": 61.61276250077208
+  },
+  "ms_p95": {
+    "route": 0.04136299967285594,
+    "repair": 32.88679264869642,
+    "detect": 59.81705479980519,
+    "isolate": 0.16340855008820654,
+    "total": 73.66514200029997
+  },
+  "fps_median": 16.230403562694804,
+  "share_frames_over_100ms": 0.0011111111111111111,
+  "route_accuracy": 0.9377777777777778,
+  "ms_total_by_route": {
+    "clean": 57.0,
+    "dust": 65.4,
+    "rain": 62.8
+  }
+}
