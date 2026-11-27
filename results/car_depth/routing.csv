@@ -1,0 +1,10 @@
+family,gate,to_repair,to_correct_repair
+clean,rule 0.6,0.09722222222222222,
+clean,conformal (training towns),0.6527777777777778,
+clean,conformal (held-out towns),0.0625,
+rain,rule 0.6,0.6620370370370371,0.6620370370370371
+rain,conformal (training towns),0.9158950617283951,0.9158950617283951
+rain,conformal (held-out towns),0.6342592592592593,0.6342592592592593
+dust,rule 0.6,0.8171296296296297,0.8090277777777778
+dust,conformal (training towns),1.0,0.8865740740740741
+dust,conformal (held-out towns),0.9826388888888888,0.8831018518518519

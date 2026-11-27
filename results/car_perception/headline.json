@@ -1,0 +1,77 @@
+{
+  "car_detector": "maskrcnn",
+  "car_router": "combined_car",
+  "train_path_recall_with_repair": {
+    "detr": 0.586,
+    "maskrcnn": 0.604
+  },
+  "frames": {
+    "train": 216,
+    "test": 144
+  },
+  "score_thresholds": {
+    "detr": 0.9,
+    "maskrcnn": 0.9
+  },
+  "repairer_choice": {
+    "detr": {
+      "clean": "none",
+      "rain": "restormer_derain",
+      "dust": "dcp_dehaze"
+    },
+    "maskrcnn": {
+      "clean": "none",
+      "rain": "autocontrast",
+      "dust": "dcp_dehaze"
+    }
+  },
+  "weather_hurts": {
+    "detr": {
+      "rain_L1": -0.164,
+      "rain_L2": -0.24,
+      "rain_L3": -0.281,
+      "dust_L1": -0.242,
+      "dust_L2": -0.316,
+      "dust_L3": -0.399
+    },
+    "maskrcnn": {
+      "rain_L1": -0.203,
+      "rain_L2": -0.319,
+      "rain_L3": -0.374,
+      "dust_L1": -0.268,
+      "dust_L2": -0.32,
+      "dust_L3": -0.44
+    }
+  },
+  "clean_map50_test": {
+    "detr": 0.506,
+    "maskrcnn": 0.731
+  },
+  "router_correct_test": {
+    "carla": {
+      "clean": 0.896,
+      "dust": 0.0,
+      "rain": 0.134
+    },
+    "combined": {
+      "clean": 0.528,
+      "dust": 1.0,
+      "rain": 0.851
+    },
+    "combined_car": {
+      "clean": 0.965,
+      "dust": 1.0,
+      "rain": 0.625
+    },
+    "real": {
+      "clean": 0.924,
+      "dust": 0.995,
+      "rain": 0.085
+    },
+    "synthetic": {
+      "clean": 0.708,
+      "dust": 1.0,
+      "rain": 0.769
+    }
+  }
+}

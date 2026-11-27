@@ -1,0 +1,12 @@
+stage,median_ms
+repair,14.6
+depth,47.1
+sam,653.0
+detect,31.4
+cue:border_strengthening,4.8
+cue:depth_boundary_emphasis,8.4
+cue:entity_background_separation,8.2
+cue:shadow_reinforcement,3.1
+cue:contrast_luminance,10.4
+cue:thermal_injection,6.9
+obstacle,27.0

@@ -16,6 +16,19 @@ Held-out test sets, never used for training:
                             is in both training and test)
   coco/clean                the 300-image COCO comparison sample
   imagenette/clean          200 Imagenette val images, a clean source no detector trained on
+  carla/clean|rain|dust     CARLA frames from held-out towns (Town10HD, Town02), when --carla exists
+
+With CARLA frames present, a fourth detector, `carla`, trains on the same clean pool plus CARLA
+clean / rain / dust frames from the other towns (simulator weather instead of physics filters).
+
+With the CARLA car-camera drives present (--car, record_ego_drive.py), a fifth detector,
+`combined_car`, is the combined detector plus clean frames from the car's own camera (training
+towns only, one frame per 1.5 s): a car has plenty of clean footage from its own camera, and
+without it every detector sends 20-30 % of clean car frames to a repair (run_car_routing.py).
+It adds three tests on the held-out towns (Town10HD, Town02), one frame per 2.5 s:
+  car/clean                   clean car frames
+  car/rain, car/dust          the same frames under physics rain / dust (effects and levels
+                              rotate over frames; exact CARLA depth)
 
 Images are resized to a 320-pixel short side before features, so resolution does not identify
 the dataset. A prediction counts as `decided` when the top label is not clean and has
@@ -47,7 +60,11 @@ from bolero.config import DATA_DIR, RESULTS_DIR, SEED
 from bolero.data import list_images
 from bolero.detection import CLEAN, PerturbationDetector, extract_features
 from bolero.perturbations import LEVELS, WEATHER, rng_for
-from bolero.weather_data import load_coco, load_condition_folders, load_dawn, load_xwod, open_rgb
+from bolero.car_perception import router_features
+from bolero.ego import apply_weather
+from bolero.weather_data import load_carla, load_coco, load_condition_folders, load_dawn, load_xwod, open_rgb
+
+CARLA_TEST_TOWNS = ("Town10HD_Opt", "Town02_Opt")   # held out from the CARLA-trained detector
 
 SIDE = 320
 THRESHOLD = 0.6
@@ -81,6 +98,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--virada", type=Path, default=DATA_DIR / "virada")
     parser.add_argument("--sdsi", type=Path, default=None, help="optional SDSI root (storm/ and clear/ folders)")
+    parser.add_argument("--carla", type=Path, default=DATA_DIR / "carla",
+                        help="CARLA frames (record_carla_weather.py); adds a CARLA-trained detector and CARLA tests")
+    parser.add_argument("--car", type=Path, default=DATA_DIR / "carla_ego",
+                        help="CARLA car-camera drives (record_ego_drive.py); adds combined_car and car tests")
     parser.add_argument("--coco-clean", type=int, default=300, help="extra COCO clean training images")
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--device", default=None)
@@ -130,6 +151,45 @@ def main() -> None:
     }
     training["combined"] = (np.vstack([training["real"][0], syn_x]), np.concatenate([training["real"][1], syn_y]))
 
+    carla_tests = {}
+    if (args.carla / "manifest.csv").exists():
+        # Simulator weather: CARLA clean + rain + dust (levels 1-3) from the training towns. CARLA clean
+        # frames join this detector's clean examples, or it could learn "rendered = weather".
+        def carla_paths(cond, test):
+            levels = (0,) if cond == "clean" else (1, 2, 3)
+            return [s.path for lv in levels for s in load_carla(args.carla, cond, lv)
+                    if (s.path.name.split("_")[0] in {t.split("_")[0].lower() for t in CARLA_TEST_TOWNS}) == test]
+        f_cc = feats(carla_paths("clean", False), "carla clean (train towns)")
+        f_cr = feats(carla_paths("rain", False), "carla rain (train towns)")
+        f_cd = feats(carla_paths("dust", False), "carla dust (train towns)")
+        training["carla"] = (np.vstack([f_clean, f_cc, f_cr, f_cd]),
+                             np.concatenate([clean_y, [CLEAN] * len(f_cc), ["rain"] * len(f_cr), ["dust"] * len(f_cd)]))
+        carla_tests = {"carla/clean": (carla_paths("clean", True), CLEAN), "carla/rain": (carla_paths("rain", True), "rain"),
+                       "carla/dust": (carla_paths("dust", True), "dust")}
+
+    car_test_feats = {}
+    if (args.car / "manifest.csv").exists():
+        from run_car_perception import load_frame
+
+        drives = pd.read_csv(args.car / "manifest.csv")
+        idx = drives.frame.str[-4:].astype(int)
+        held_out = drives.town.isin(CARLA_TEST_TOWNS)
+        car_clean = list(drives[~held_out & (idx % 3 == 0)].path)
+        f_car = feats(car_clean, "car clean (train towns)")
+        training["combined_car"] = (np.vstack([training["combined"][0], f_car]),
+                                    np.concatenate([training["combined"][1], [CLEAN] * len(f_car)]))
+        test_frames = list(drives[held_out & (idx % 5 == 0)].frame)
+        rain_fx = [w for w in WEATHER if WEATHER[w].family == "rain"]
+        dust_fx = [w for w in WEATHER if WEATHER[w].family == "dust"]
+        car_test_feats = {"car/clean": [], "car/rain": [], "car/dust": []}
+        for i, fid in enumerate(tqdm(test_frames, desc="car tests")):
+            img, depth, _ = load_frame(args.car, fid)
+            lv = LEVELS[i % 3]
+            car_test_feats["car/clean"].append(router_features(img))
+            car_test_feats["car/rain"].append(router_features(apply_weather(img, depth, rain_fx[i % len(rain_fx)], lv, fid, args.seed)))
+            car_test_feats["car/dust"].append(router_features(apply_weather(img, depth, dust_fx[i % len(dust_fx)], lv, fid, args.seed)))
+        car_test_feats = {k: np.stack(v) for k, v in car_test_feats.items()}
+
     tests = {
         "xwod/rain": ([s.path for s in xwod_test if s.condition == "rain"], "rain"),
         "xwod/dust": ([s.path for s in xwod_test if s.condition == "dust"], "dust"),
@@ -141,8 +201,12 @@ def main() -> None:
         # Clean images from a source no detector trained on: guards against learning
         # "not COCO / VIRADA means weather" instead of rain and dust.
         "imagenette/clean": ([r.path for r in list_images("val", per_class=20, seed=args.seed)], CLEAN),
+        **carla_tests,
     }
     test_feats = {k: feats(paths, k) for k, (paths, _) in tests.items()}
+    for k, v in car_test_feats.items():
+        tests[k] = ([None] * len(v), k.split("/")[1])
+        test_feats[k] = v
 
     rows, args_out = [], args.out
     args_out.mkdir(parents=True, exist_ok=True)
