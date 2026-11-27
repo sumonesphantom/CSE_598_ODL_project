@@ -191,9 +191,9 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
       - On real data only dust benefits from preprocessing: auto-contrast +6.2 pp [2.3, 14.9] on XWOD dust, +1.3 pp [0.3, 2.3] on DAWN dust; on rain no baseline's interval excludes zero
       - Generative edits that change the scene (CLIP similarity to the clean image below 0.604, the 5th percentile of the physics effects) are reported separately as `kept`. The filter removes invented scenes (similarity 0.38-0.45) but is coarse near the cutoff: some kept edits lost a car or a dog, and some rejected ones are fine. With a stricter cutoff (0.75, `results/degradation_compare_clip075/`) generative dust level 3 loses only 0.17 mAP50 instead of 0.35, so much of its "weather damage" is content destruction. Conclusions above hold at both cutoffs
       - Caveats: the class-profile score mostly reflects the camera viewpoint, not the weather: clean CARLA traffic-camera frames already match the real sets at 0.54-0.90 (see CARLA.md), while clean COCO close-ups do not; COCO scenes are the detector's training domain, so synthetic sets start easier than real ones; class profiles use only 5-6 classes; auto-contrast is best on every real set, so "same best method" mostly asks whether a source agrees that auto-contrast helps
-- [x] Retrain the RF condition detector on real rain and dust (2026-11-19, VIRADA done; **SDSI still open**): `python scripts/prepare_virada.py && python scripts/train_weather_detector.py` → `results/weather_detector/`
+- [x] Retrain the RF condition detector on real rain and dust (2026-11-19, VIRADA done; **SDSI dropped** 2026-11-27, no time to request it): `python scripts/prepare_virada.py && python scripts/train_weather_detector.py` → `results/weather_detector/`
       - VIRADA (Zenodo 4715681, CC BY 4.0) is 167 GB of video, so `prepare_virada.py` reads the Crossing2 zips over HTTP range requests and fetches only the chosen clips (8.6 MB of frames kept). A clip is used only if every minute has the same label from both rain sensors: all 46 such rain clips (3 days) plus 92 dry clips, half from the rain days; 3 frames per clip. VIRADA rain is wet, reflective asphalt, not visible streaks
-      - SDSI has no public download (paper: Remote Sensing 15(21):5227, 2023); the MDPI page blocks automated reading. Needs a request to the authors. The script takes `--sdsi data/sdsi` (folders storm/ clear/) once it arrives
+      - SDSI has no public download (paper: Remote Sensing 15(21):5227, 2023); the MDPI page blocks automated reading. It would need a request to the authors; dropped for time (2026-11-27). The script still takes `--sdsi data/sdsi` (folders storm/ clear/) if it is ever obtained
       - Same features, same random forest (threshold 0.6), same 510 clean images (300 COCO traffic scenes not in the comparison sample + VIRADA dry frames from training days); only the source of rain / dust examples differs. Synthetic = the 5 physics effects at levels 1-3 on the clean pool. Real = XWOD train + valid (479 rain incl. VIRADA training days, 415 dust). VIRADA is split by day (test: the last rain day + alternate dry-only days)
       - Share of held-out images routed correctly (decided label = truth; for clean sets, the share not falsely alarmed), 95% Wilson CIs in `summary.csv`:
         | Test set | Synthetic-trained | Real-trained | Combined |
@@ -208,7 +208,7 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
         | Imagenette clean (source never trained on) | 0.53 | **0.96** | 0.51 |
       - The synthetic-trained detector says "rain" to almost anything: 60% of clean COCO, 73% of real XWOD dust, 78% of clean Imagenette (top-1). It never recognizes VIRADA's wet-road rain. Adding synthetic data to real data (combined) brings those false alarms back (only 51-56% of clean COCO and Imagenette images pass)
       - The real-trained detector generalizes to DAWN, a dataset it never saw, and keeps 96% of clean images from an unseen source clean, so it is recognizing weather rather than "not one of my clean datasets". Its weak spots: XWOD dust is often called rain (45%), XWOD rain is mostly found (top-1 0.78) but below the 0.6 confidence bar, and VIRADA rain is hard for every detector
-      - Caveats: VIRADA rain comes from one crossing (2 crops of one camera) on 3 days; real dust training data is XWOD only until SDSI arrives; the synthetic training set is heavily imbalanced (4,590 rain / 3,060 dust vs 510 clean; the forest's class weighting only partly offsets it)
+      - Caveats: VIRADA rain comes from one crossing (2 crops of one camera) on 3 days; real dust training data is XWOD only (SDSI dropped); DAWN dust stays the independent check; the synthetic training set is heavily imbalanced (4,590 rain / 3,060 dust vs 510 clean; the forest's class weighting only partly offsets it)
       - Recommendation: route on the real-trained detector, not one trained on physics perturbations. Physics weather is useful to stress the classifier / detector, not to teach a detector what real weather looks like
 
 ## Sachin: Decision engine (Jev alternatives) + VLM
@@ -229,7 +229,21 @@ More: [systemonemodels.org list](https://systemonemodels.org/examples/alternativ
 - [x] Choose a VLM (Qwen2.5-VL-3B) and compare image only vs image + evidence, with text, overlay, depth-image and field ablations (`scripts/run_vlm_eval.py`)
 - [x] Define the VLM scoring: entity match, damage match (only when it overlaps the entity), geometric relation with a VLM fallback, and label utility (`vlm_scoring.py`)
 - [x] Build the 30-case human review packet and agreement/kappa scorer (`scripts/make_vlm_review.py`); run it on the final VLM predictions
-- [ ] Rerun the decider comparison on the `weather` taxonomy once Aravind's physics rain/dust perturbations land; retrain the RF on those classes
+- [x] Decider comparison on the `weather` taxonomy (2026-11-27, `results/deciders_weather/`). 140 Imagenette images at 320 px: 20 clean, 60 rain, 60 dust (the 5 physics weather effects at 3 levels). Total hosted cost $0.013
+      - RF retrained on the 14 original perturbations plus the 5 weather effects at 320 px (`train_detector.py --perturbations ...`; top-1 79.5 %, clean false alarm 5.0 %)
+      - d1 is gone from OpenRouter ("No endpoints found for liquid/d1"), so it has no weather result
+      | Decider | Weather caught | Clean false alarms | Right label: clean / rain / dust | Recall at 5 % / 10 % false alarms (calibrated) |
+      |---|---|---|---|---|
+      | RF | 0.68 | 0.10 | 0.90 / 0.52 / 0.83 | **0.84** / 0.84 |
+      | Jev | 0.98 | 0.25 | 0.75 / 0.63 / 0.92 | 0.78 / 0.83 |
+      | pplx-decider-flash | 0.85 | 0.05 | 0.95 / 0.65 / 0.80 | 0.81 / **0.96** |
+      | joey-1 | 0.71 | 0.00 | 0.95 / 0.65 / **0.98** | 0.77 / 0.92 |
+      | clef-flash | 0.80 | 0.05 | 1.00 / 0.67 / 0.53 | 0.43 / **0.96** |
+      - At a 5 % false-alarm rate the free local RF still catches the most weather. At 10 % the hosted deciders pass it, which did not happen on the original perturbations
+      - Rain is the hard case for every decider (52-67 % labelled right). Hosted models call about a third of rain "other"; the RF calls half of it clean because it is unsure about lens drops (`rain_lens`, mean confidence 0.33 against the 0.6 bar). Dust is easy for all but clef-flash
+      - Jev again buys its recall with a loose threshold (25 % clean false alarms)
+      - Small sample: 20 clean images make 5 % the lowest reachable calibration level, and 60 images per condition leave about ±12 pp of noise. The 5 % vs 10 % ranking may change with more clean images
+      - Run: `IMAGENETTE_VERSION=320 python scripts/train_detector.py --train-per-class 20 --val-per-class 10 --perturbations <14 originals> rain_streaks rain_mist rain_lens dust_haze dust_storm --out results/deciders_weather/detector320 --depth-root data/cache/depth-320`, then `run_decider_compare.py --taxonomy weather --perturbations <5 weather> --rf-detector results/deciders_weather/detector320/detector.joblib --severity-model results/deciders_weather/severity.joblib --out results/deciders_weather/main` (other flags as the main run) and `calibrate_deciders.py --scores results/deciders_weather/main/scores.csv --skip majority d1 --out results/deciders_weather/conformal`. The detector (218 MB) is not committed; rerun the first command to rebuild it
 - [x] Structure source swap, short version (2026-11-11): no SAM/DETR win. 100 val images, `gaussian_blur` + `foreground_blur`, 3 sources, 2 cues, paired deltas with 95% bootstrap CIs:
       | Source | Time | Delta (boundary) | Delta (separation) | Fix / break |
       |---|---|---|---|---|

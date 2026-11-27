@@ -1,0 +1,220 @@
+{
+  "config": {
+    "per_class": 5,
+    "max_per_condition": 20,
+    "taxonomy": "weather",
+    "perturbations": [
+      "rain_streaks",
+      "rain_mist",
+      "rain_lens",
+      "dust_haze",
+      "dust_storm"
+    ],
+    "levels": [
+      1,
+      2,
+      3
+    ],
+    "data_root": "data/imagenette2-320",
+    "seed": 42,
+    "deciders": [
+      "majority,rf,jev,clef-flash,pplx-decider-flash,d1,joey-1"
+    ],
+    "evidence_mode": "stats+image",
+    "include_detector": false,
+    "include_candidates": false,
+    "exemplars": 0,
+    "max_calls": 20000,
+    "max_cost": 2.0,
+    "workers": 4,
+    "fit_severity_per_class": 10,
+    "conformal": null,
+    "out": "results/deciders_weather/main",
+    "limit": 0,
+    "rf_detector": "results/deciders_weather/detector320/detector.joblib",
+    "severity_model": "results/deciders_weather/severity.joblib",
+    "hf_model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "deciders_resolved": [
+      {
+        "name": "majority",
+        "type": "ConstantDecider",
+        "hosted": false
+      },
+      {
+        "name": "rf",
+        "type": "RFDecider",
+        "hosted": false,
+        "taxonomy": "weather"
+      },
+      {
+        "name": "jev",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "typesafe/jev-1.14",
+        "taxonomy": "weather",
+        "evidence_mode": "stats+image"
+      },
+      {
+        "name": "clef-flash",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "cloudflare/clef-flash",
+        "taxonomy": "weather",
+        "evidence_mode": "stats+image"
+      },
+      {
+        "name": "pplx-decider-flash",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "perplexity/pplx-decider-flash-v1.2",
+        "taxonomy": "weather",
+        "evidence_mode": "stats+image"
+      },
+      {
+        "name": "d1",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "liquid/d1",
+        "taxonomy": "weather",
+        "evidence_mode": "stats+image"
+      },
+      {
+        "name": "joey-1",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "baseten/joey-1",
+        "taxonomy": "weather",
+        "evidence_mode": "stats+image"
+      }
+    ]
+  },
+  "n_rows": 980,
+  "n_samples": 140,
+  "total_cost": 0.012439639,
+  "cached_rate": 0.0,
+  "parse_failure_rate": 0.14285714285714285,
+  "per_decider": [
+    {
+      "decider": "clef-flash",
+      "n": 140,
+      "degraded_accuracy": 0.8214285714285714,
+      "degraded_recall": 0.8,
+      "clean_false_alarm_rate": 0.05,
+      "condition_accuracy": 0.6571428571428571,
+      "condition_macro_f1": 0.5114480574838631,
+      "severity_exact": 0.39166666666666666,
+      "severity_within1": 1.0,
+      "severity_mae": 0.6083333333333333,
+      "parse_failure_rate": 0.0,
+      "latency_p50_ms": 465.9742290023132,
+      "latency_p95_ms": 840.1399368398414,
+      "cached_rate": 0.0,
+      "total_cost": 0.002307911
+    },
+    {
+      "decider": "d1",
+      "n": 140,
+      "degraded_accuracy": 0.0,
+      "degraded_recall": 0.0,
+      "clean_false_alarm_rate": 0.0,
+      "condition_accuracy": 0.0,
+      "condition_macro_f1": 0.0,
+      "severity_exact": 0.0,
+      "severity_within1": 0.0,
+      "severity_mae": 0.0,
+      "parse_failure_rate": 1.0,
+      "latency_p50_ms": 50.42841700196732,
+      "latency_p95_ms": 82.1359285400831,
+      "cached_rate": 0.0,
+      "total_cost": 0.0
+    },
+    {
+      "decider": "jev",
+      "n": 140,
+      "degraded_accuracy": 0.95,
+      "degraded_recall": 0.9833333333333333,
+      "clean_false_alarm_rate": 0.25,
+      "condition_accuracy": 0.7714285714285715,
+      "condition_macro_f1": 0.6357106885057195,
+      "severity_exact": 0.35,
+      "severity_within1": 1.0,
+      "severity_mae": 0.65,
+      "parse_failure_rate": 0.0,
+      "latency_p50_ms": 214.32904199900804,
+      "latency_p95_ms": 296.3088961478205,
+      "cached_rate": 0.0,
+      "total_cost": 0.007855848
+    },
+    {
+      "decider": "joey-1",
+      "n": 140,
+      "degraded_accuracy": 0.75,
+      "degraded_recall": 0.7083333333333334,
+      "clean_false_alarm_rate": 0.0,
+      "condition_accuracy": 0.8357142857142857,
+      "condition_macro_f1": 0.6689935064935064,
+      "severity_exact": 0.36666666666666664,
+      "severity_within1": 0.9833333333333333,
+      "severity_mae": 0.65,
+      "parse_failure_rate": 0.0,
+      "latency_p50_ms": 294.02862500137417,
+      "latency_p95_ms": 422.7110479063412,
+      "cached_rate": 0.0,
+      "total_cost": 0.00119699
+    },
+    {
+      "decider": "majority",
+      "n": 140,
+      "degraded_accuracy": 0.8571428571428571,
+      "degraded_recall": 1.0,
+      "clean_false_alarm_rate": 1.0,
+      "condition_accuracy": 0.0,
+      "condition_macro_f1": 0.0,
+      "severity_exact": 0.3333333333333333,
+      "severity_within1": 1.0,
+      "severity_mae": 0.6666666666666666,
+      "parse_failure_rate": 0.0,
+      "latency_p50_ms": 0.0,
+      "latency_p95_ms": 0.0,
+      "cached_rate": 0.0,
+      "total_cost": 0.0
+    },
+    {
+      "decider": "pplx-decider-flash",
+      "n": 140,
+      "degraded_accuracy": 0.8642857142857143,
+      "degraded_recall": 0.85,
+      "clean_false_alarm_rate": 0.05,
+      "condition_accuracy": 0.7571428571428571,
+      "condition_macro_f1": 0.6264026402640264,
+      "severity_exact": 0.35,
+      "severity_within1": 1.0,
+      "severity_mae": 0.65,
+      "parse_failure_rate": 0.0,
+      "latency_p50_ms": 333.8498124940088,
+      "latency_p95_ms": 547.6152267445277,
+      "cached_rate": 0.0,
+      "total_cost": 0.0010788899999999999
+    },
+    {
+      "decider": "rf",
+      "n": 140,
+      "degraded_accuracy": 0.7071428571428572,
+      "degraded_recall": 0.675,
+      "clean_false_alarm_rate": 0.1,
+      "condition_accuracy": 0.7071428571428572,
+      "condition_macro_f1": 0.5144855144855145,
+      "severity_exact": 0.4083333333333333,
+      "severity_within1": 0.65,
+      "severity_mae": 0.43209876543209874,
+      "parse_failure_rate": 0.0,
+      "latency_p50_ms": 119.34704150189646,
+      "latency_p95_ms": 145.10598720007684,
+      "cached_rate": 0.0,
+      "total_cost": 0.0
+    }
+  ],
+  "skipped": [],
+  "stopped": null,
+  "hosted_calls": 700
+}

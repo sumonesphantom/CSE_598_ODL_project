@@ -447,7 +447,7 @@ def fit_severity_model(args: Any, depth_cache: DepthCache | None = None) -> Path
     for sample in iter_samples(
         records,
         getattr(args, "taxonomy", "family"),
-        None,
+        getattr(args, "perturbations", None),
         LEVELS,
         max_per_bucket=int(getattr(args, "fit_severity_per_class", 10)),
         depth_for=cache.get,

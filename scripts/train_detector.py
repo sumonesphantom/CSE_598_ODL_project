@@ -23,11 +23,11 @@ from bolero.config import RESULTS_DIR, SEED
 from bolero.data import list_images, load_image
 from bolero.depth import DepthCache
 from bolero.detection import CLEAN, PerturbationDetector, extract_features
-from bolero.perturbations import LEVELS, PERTURBATIONS, rng_for
+from bolero.perturbations import ANY_PERTURBATION, LEVELS, PERTURBATIONS, rng_for
 from bolero.records import save
 
 
-def build(split: str, per_class: int, seed: int, depth_cache: DepthCache):
+def build(split: str, per_class: int, seed: int, depth_cache: DepthCache, names: list[str]):
     features, labels, meta = [], [], []
     for record in tqdm(list_images(split, per_class=per_class, seed=seed), desc=f"{split} features"):
         image = load_image(record.path)
@@ -37,7 +37,8 @@ def build(split: str, per_class: int, seed: int, depth_cache: DepthCache):
             features.append(extract_features(image))
             labels.append(CLEAN)
             meta.append({"image_id": record.image_id, "perturbation": CLEAN, "level": 0})
-        for name, perturbation in PERTURBATIONS.items():
+        for name in names:
+            perturbation = ANY_PERTURBATION[name]
             for level in LEVELS:
                 out = perturbation(image, level, depth, rng_for(record.image_id, name, level, seed))
                 features.append(extract_features(out))
@@ -53,16 +54,19 @@ def main() -> None:
     parser.add_argument("--threshold", type=float, default=0.6)
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--out", type=Path, default=RESULTS_DIR / "detector")
+    parser.add_argument("--perturbations", nargs="*", default=list(PERTURBATIONS),
+                        choices=list(ANY_PERTURBATION),
+                        help="classes to train on (default: the 14 originals; add the WEATHER effects for the weather taxonomy)")
     parser.add_argument("--depth-root", type=Path, default=None,
                         help="depth cache root (default: data/cache/depth; use a versioned root for 320 px)")
     args = parser.parse_args()
 
     depth_cache = DepthCache(root=args.depth_root) if args.depth_root else DepthCache()
-    x_train, y_train, _ = build("train", args.train_per_class, args.seed, depth_cache)
+    x_train, y_train, _ = build("train", args.train_per_class, args.seed, depth_cache, args.perturbations)
     detector = PerturbationDetector(threshold=args.threshold).fit(x_train, y_train)
     detector.save(args.out / "detector.joblib")
 
-    x_val, y_val, meta = build("val", args.val_per_class, args.seed + 1, depth_cache)
+    x_val, y_val, meta = build("val", args.val_per_class, args.seed + 1, depth_cache, args.perturbations)
     proba = detector.predict_proba(x_val)
     best = proba.argmax(axis=1)
     predicted = detector.classes[best]
