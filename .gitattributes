@@ -1,0 +1,2 @@
+*.joblib filter=lfs diff=lfs merge=lfs -text
+weights/nafnet/*.pth filter=lfs diff=lfs merge=lfs -text
