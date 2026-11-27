@@ -1,0 +1,2 @@
+decider,n,degraded_accuracy,degraded_recall,clean_false_alarm_rate,condition_accuracy,condition_macro_f1,severity_exact,severity_within1,severity_mae,parse_failure_rate,latency_p50_ms,latency_p95_ms,cached_rate,total_cost
+jev,120,0.9083333333333333,0.9145299145299145,0.3333333333333333,0.55,0.4346853877117035,0.49572649572649574,0.9914529914529915,0.5128205128205128,0.0,230.8251250651665,339.2348277324344,0.0,0.0056322

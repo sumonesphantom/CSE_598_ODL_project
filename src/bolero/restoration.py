@@ -173,95 +173,20 @@ PLANS: dict[str, list[Op]] = {
 }
 
 
-# Candidate plans are evaluated on development data by scripts/tune_plans.py.
-# Pass-through is always available when restoration is not demonstrably helpful.
-CANDIDATES: dict[str, dict[str, list[Op]]] = {
-    "gaussian_noise": {
-        "pass_through": [],
-        "nlm_0.15": [lambda x: denoise(x, 0.15)],
-        "nlm_0.30": [lambda x: denoise(x, 0.30)],
-        "nlm_0.90": [lambda x: denoise(x, 0.90)],
-        "adaptive": [denoise_adaptive],
-        "bilateral": [bilateral_filter],
-    },
-    **{
-        name: {
-            "pass_through": [],
-            "inpaint_guarded_0.10": [lambda x: inpaint(x, 0.10)],
-            "inpaint_guarded_0.25": [lambda x: inpaint(x, 0.25)],
-            "inpaint_always": [inpaint],
-        }
-        for name in (
-            "region_removal",
-            "boundary_erase",
-            "foreground_occlusion",
-            "background_removal",
-        )
-    },
-}
+def load_skip_plans(path) -> frozenset[str]:
+    """Perturbations whose plan should pass through, from scripts/audit_plans.py (or none)."""
+    if path is None:
+        return frozenset()
+    import json
+    from pathlib import Path
+    return frozenset(json.loads(Path(path).read_text())["skip"])
 
 
-def load_plans(
-    path: Path,
-) -> tuple[dict[str, list[Op]], str, dict[str, str]]:
-    """Load dev-selected plans, retaining hand-set plans for untuned types."""
-    plans = dict(PLANS)
-    selected = {name: "hand_set" for name in PLANS}
-    path = Path(path)
-
-    if not path.is_file():
-        warnings.warn(
-            f"{path} not found; using hand-set restoration plans. "
-            "Run scripts/tune_plans.py to select plans on development data."
-        )
-        return plans, "default", selected
-
-    data = json.loads(path.read_text(encoding="utf-8"))
-    chosen = data.get("plans")
-
-    if not isinstance(chosen, dict):
-        raise ValueError(
-            f"Invalid plan file: {path}. Expected a 'plans' object."
-        )
-
-    for perturbation, variant in chosen.items():
-        if perturbation not in CANDIDATES:
-            raise ValueError(
-                f"Unknown perturbation in {path}: {perturbation}"
-            )
-
-        if variant not in CANDIDATES[perturbation]:
-            raise ValueError(
-                f"Unknown plan variant for {perturbation}: {variant}"
-            )
-
-        plans[perturbation] = CANDIDATES[perturbation][variant]
-        selected[perturbation] = variant
-
-    return plans, "tuned", selected
-
-
-def restore(
-    image: np.ndarray,
-    perturbation: str,
-    plans: dict[str, list[Op]] | None = None,
-) -> np.ndarray:
-    """Restore using the supplied plan, falling back to the hand-set plan."""
-    active_plans = PLANS if plans is None else plans
-
-    operations = active_plans.get(perturbation)
-
-    if operations is None:
-        operations = PLANS.get(perturbation)
-
-    if operations is None:
-        raise ValueError(
-            f"Unknown perturbation type: {perturbation}"
-        )
-
+def restore(image: np.ndarray, perturbation: str, skip: frozenset[str] = frozenset()) -> np.ndarray:
+    """Apply the plan for `perturbation`; pass through when it is listed in `skip`
+    (plans the audit found to lower accuracy even when the perturbation is known)."""
     out = image
-
-    for op in operations:
+    for op in [] if perturbation in skip else PLANS[perturbation]:
         out = op(out)
 
     return np.clip(out, 0.0, 1.0).astype(np.float32)

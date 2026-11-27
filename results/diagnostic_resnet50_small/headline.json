@@ -1,0 +1,15 @@
+{
+  "images": 200,
+  "records": 8400,
+  "perturbations": 14,
+  "levels": 3,
+  "clean_accuracy": 0.825,
+  "perturbed_accuracy": 0.6792857142857143,
+  "prediction_changed_rate": 0.23488095238095238,
+  "correct_to_wrong": 1345,
+  "wrong_to_correct": 121,
+  "held_out_accuracy": {
+    "rand_augment": 0.7916666666666666
+  },
+  "wall_minutes": 1.2733364194495758
+}

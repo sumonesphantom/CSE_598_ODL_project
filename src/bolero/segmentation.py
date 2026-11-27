@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 from scipy import ndimage
 
-from .config import CACHE_DIR, SEGMENTERS, get_device
+from .config import CACHE_DIR, SEGMENTERS, TEXT_SEGMENTER, get_device
 from .data import ImageRecord, to_pil
 
 
@@ -64,7 +64,10 @@ class Segmenter:
             self.pipe = pipeline("mask-generation", model=SEGMENTERS[kind], framework="pt",
                                  device=self.device)
         elif kind == "detr":
-            self.pipe = pipeline("object-detection", model=SEGMENTERS[kind], revision="no_timm",
+            # The `no_timm` revision carries `dilation: null`, which transformers 5.x
+            # rejects during config validation. The main revision uses the timm
+            # ResNet-50 backbone instead (see requirements.txt).
+            self.pipe = pipeline("object-detection", model=SEGMENTERS[kind],
                                  framework="pt", device=self.device)
         else:
             raise ValueError(f"unknown segmenter {kind!r}; choose from {list(SEGMENTERS)}")
@@ -143,3 +146,57 @@ class StructureCache:
             bits = np.packbits(mask) if mask is not None else np.zeros(0, np.uint8)
             np.savez_compressed(path, bits=bits, shape=np.array(image.shape[:2]), found=mask is not None)
         return mask
+
+
+class TextSegmenter:
+    """Text-prompted soft mask from CLIPSeg: where in the image is "<prompt>"?
+
+    The unprompted SAM picker (`select_entity`) often keeps one window, a door
+    or the sky instead of a church that fills the frame. Naming the entity in a
+    prompt fixes *which* region is the entity, the tool-augmented context idea.
+    """
+
+    def __init__(self, model_name: str = TEXT_SEGMENTER, device: str | None = None):
+        from transformers import CLIPSegForImageSegmentation, CLIPSegProcessor
+
+        self.device = get_device(device)
+        self.processor = CLIPSegProcessor.from_pretrained(model_name)
+        self.model = CLIPSegForImageSegmentation.from_pretrained(model_name).to(self.device).eval()
+
+    def __call__(self, image: np.ndarray, prompt: str) -> np.ndarray:
+        """Probability map HxW in [0, 1] that each pixel belongs to `prompt`."""
+        import torch
+        import torch.nn.functional as F
+
+        inputs = self.processor(text=[prompt], images=[to_pil(image)], return_tensors="pt").to(self.device)
+        with torch.no_grad():
+            logits = self.model(**inputs).logits.reshape(1, 1, *inputs["pixel_values"].shape[-2:])
+        prob = torch.sigmoid(F.interpolate(logits.float(), size=image.shape[:2], mode="bilinear",
+                                           align_corners=False))[0, 0]
+        return prob.cpu().numpy().astype(np.float32)
+
+
+def threshold_text_mask(prob: np.ndarray, floor: float = 0.3, relative: float = 0.5) -> np.ndarray | None:
+    """Binary entity mask from a CLIPSeg probability map; None if the prompt was not found."""
+    if prob.max() < floor:
+        return None
+    mask = prob >= max(floor, relative * float(prob.max()))
+    return mask if mask.any() else None
+
+
+def regions_in_mask(regions: list[Region], guide: np.ndarray | None, min_inside: float = 0.5,
+                    max_area: float = 0.95) -> np.ndarray | None:
+    """Union of the SAM regions that lie mostly inside a guide mask (e.g. from a text prompt).
+
+    Keeps SAM's crisp edges while the guide decides which parts are the entity.
+    Whole-frame regions are skipped, as in `select_entity`.
+    """
+    if guide is None or not guide.any():
+        return None
+    union = np.zeros(guide.shape, dtype=bool)
+    for r in regions:
+        if r.area == 0 or r.area > max_area:
+            continue
+        if (r.mask & guide).sum() / r.mask.sum() >= min_inside:
+            union |= r.mask
+    return union if union.any() else None

@@ -1,0 +1,12 @@
+{
+  "training_towns": {
+    "threshold": 0.25967658730158727,
+    "alpha": 0.05,
+    "calibration_frames": 180
+  },
+  "held_out_towns": {
+    "threshold": 0.6859258658008658,
+    "alpha": 0.05,
+    "calibration_frames": 144
+  }
+}

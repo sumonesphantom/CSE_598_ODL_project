@@ -1,0 +1,105 @@
+{
+  "config": {
+    "per_class": 5,
+    "max_per_condition": 20,
+    "taxonomy": "family",
+    "perturbations": [
+      "region_removal",
+      "inversion",
+      "grayscale",
+      "low_contrast",
+      "darken",
+      "brighten",
+      "gaussian_blur",
+      "gaussian_noise",
+      "jpeg_compression",
+      "boundary_blur",
+      "boundary_erase",
+      "foreground_blur",
+      "foreground_occlusion",
+      "background_removal",
+      "rand_augment"
+    ],
+    "levels": [
+      1,
+      2,
+      3
+    ],
+    "data_root": "data/imagenette2-320",
+    "seed": 42,
+    "deciders": [
+      "majority,rf,jev,clef-flash,pplx-decider-flash,d1,joey-1"
+    ],
+    "evidence_mode": "stats+image",
+    "include_detector": false,
+    "include_candidates": false,
+    "exemplars": 0,
+    "max_calls": 20000,
+    "max_cost": 2.0,
+    "workers": 4,
+    "fit_severity_per_class": 10,
+    "conformal": null,
+    "out": "results/deciders/main",
+    "limit": 0,
+    "rf_detector": "results/deciders/detector320/detector.joblib",
+    "severity_model": "/Users/sachin/Desktop/Uni Courses/CSE 598 - Deep Learning/course_project_actual/CSE_598_ODL_project/results/deciders/severity.joblib",
+    "hf_model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "deciders_resolved": [
+      {
+        "name": "majority",
+        "type": "ConstantDecider",
+        "hosted": false
+      },
+      {
+        "name": "rf",
+        "type": "RFDecider",
+        "hosted": false,
+        "taxonomy": "family"
+      },
+      {
+        "name": "jev",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "typesafe/jev-1.14",
+        "taxonomy": "family",
+        "evidence_mode": "stats+image"
+      },
+      {
+        "name": "clef-flash",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "cloudflare/clef-flash",
+        "taxonomy": "family",
+        "evidence_mode": "stats+image"
+      },
+      {
+        "name": "pplx-decider-flash",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "perplexity/pplx-decider-flash-v1.2",
+        "taxonomy": "family",
+        "evidence_mode": "stats+image"
+      },
+      {
+        "name": "d1",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "liquid/d1",
+        "taxonomy": "family",
+        "evidence_mode": "stats+image"
+      },
+      {
+        "name": "joey-1",
+        "type": "JevDecider",
+        "hosted": true,
+        "model": "baseten/joey-1",
+        "taxonomy": "family",
+        "evidence_mode": "stats+image"
+      }
+    ]
+  },
+  "started": "2026-11-09T20:42:25.555882+00:00",
+  "finished": "2026-11-09T20:49:13.585127+00:00",
+  "wall_seconds": 407.9572827500524,
+  "stopped": null
+}

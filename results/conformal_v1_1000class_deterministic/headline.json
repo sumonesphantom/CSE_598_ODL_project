@@ -1,0 +1,106 @@
+{
+  "calibration_images": 500,
+  "val_images": 200,
+  "gate": {
+    "alpha": 0.05,
+    "threshold_on_1_minus_p_clean": 0.9534940476190477,
+    "clean_false_alarm_conformal": 0.055,
+    "clean_false_alarm_fixed": 0.055,
+    "perturbed_flagged_conformal": 0.8022619047619047,
+    "perturbed_flagged_fixed": 0.7138095238095238
+  },
+  "sets": {
+    "aps": {
+      "qhat": 0.9999998807907104,
+      "alert_max_set_size": 1000,
+      "none_clean": {
+        "coverage": 1.0,
+        "mean_set_size": 806.435,
+        "accuracy": 0.825
+      },
+      "none_perturbed": {
+        "coverage": 1.0,
+        "mean_set_size": 898.3040476190477,
+        "accuracy": 0.6792857142857143
+      },
+      "detector_clean": {
+        "coverage": 1.0,
+        "mean_set_size": 806.615,
+        "accuracy": 0.825
+      },
+      "detector_perturbed": {
+        "coverage": 1.0,
+        "mean_set_size": 893.9271428571428,
+        "accuracy": 0.6458333333333334
+      },
+      "oracle_clean": {
+        "coverage": 1.0,
+        "mean_set_size": 806.435,
+        "accuracy": 0.825
+      },
+      "oracle_perturbed": {
+        "coverage": 1.0,
+        "mean_set_size": 893.9340476190476,
+        "accuracy": 0.6445238095238095
+      },
+      "alerts_perturbed_none": {
+        "alert_rate": 0.8022619047619047,
+        "answered_accuracy": 0.6345574954846478,
+        "silent_miss_rate": 0.07226190476190476,
+        "errors_caught": 0.7746844840386043
+      },
+      "alerts_clean_none": {
+        "alert_rate": 0.055,
+        "answered_accuracy": 0.8359788359788359,
+        "silent_miss_rate": 0.155,
+        "errors_caught": 0.11428571428571428
+      }
+    },
+    "raps": {
+      "qhat": 1.0,
+      "alert_max_set_size": 19,
+      "none_clean": {
+        "coverage": 0.97,
+        "mean_set_size": 4.535,
+        "accuracy": 0.825
+      },
+      "none_perturbed": {
+        "coverage": 0.9208333333333333,
+        "mean_set_size": 9.772976190476191,
+        "accuracy": 0.6792857142857143
+      },
+      "detector_clean": {
+        "coverage": 0.97,
+        "mean_set_size": 4.555,
+        "accuracy": 0.825
+      },
+      "detector_perturbed": {
+        "coverage": 0.8988095238095238,
+        "mean_set_size": 10.173214285714286,
+        "accuracy": 0.6458333333333334
+      },
+      "oracle_clean": {
+        "coverage": 0.97,
+        "mean_set_size": 4.535,
+        "accuracy": 0.825
+      },
+      "oracle_perturbed": {
+        "coverage": 0.8977380952380952,
+        "mean_set_size": 10.276428571428571,
+        "accuracy": 0.6445238095238095
+      },
+      "alerts_perturbed_none": {
+        "alert_rate": 0.8422619047619048,
+        "answered_accuracy": 0.7471698113207547,
+        "silent_miss_rate": 0.03988095238095238,
+        "errors_caught": 0.8756495916852264
+      },
+      "alerts_clean_none": {
+        "alert_rate": 0.095,
+        "answered_accuracy": 0.850828729281768,
+        "silent_miss_rate": 0.135,
+        "errors_caught": 0.22857142857142856
+      }
+    }
+  }
+}

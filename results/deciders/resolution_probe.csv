@@ -1,0 +1,21 @@
+model,requested_short_side,width,height,accepted,status,error,cost,latency_ms,cached,answers
+typesafe/jev-1.14,160,160,239,False,400,"HTTP 400: {""detail"":{""error_type"":""api_usage_error"",""message"":""Invalid image dimensions.""}}",0.0,352.44595899712294,False,
+typesafe/jev-1.14,224,224,335,False,400,"HTTP 400: {""detail"":{""error_type"":""api_usage_error"",""message"":""Invalid image dimensions.""}}",0.0,191.55774998944253,False,
+typesafe/jev-1.14,280,280,418,True,200,,2.7174e-05,216.57783398404717,False,"{'degraded': {'type': 'noul', 'noul': 0.82}}"
+typesafe/jev-1.14,320,320,478,True,200,,3.2634e-05,303.64125000778586,False,"{'degraded': {'type': 'noul', 'noul': 0.85}}"
+cloudflare/clef-flash,160,160,239,True,200,,8.208e-06,628.5055000334978,False,"{'degraded': {'type': 'noul', 'noul': 0.1892}}"
+cloudflare/clef-flash,224,224,335,True,200,,8.208e-06,377.56399996578693,False,"{'degraded': {'type': 'noul', 'noul': 0.2504}}"
+cloudflare/clef-flash,280,280,418,True,200,,9.994e-06,461.88608394004405,False,"{'degraded': {'type': 'noul', 'noul': 0.2074}}"
+cloudflare/clef-flash,320,320,478,True,200,,1.1248e-05,712.1672499924898,False,"{'degraded': {'type': 'noul', 'noul': 0.2338}}"
+perplexity/pplx-decider-flash-v1.2,160,160,239,True,200,,1.71e-06,225.03874998074025,False,"{'degraded': {'type': 'noul', 'noul': 0.2943948180522613}}"
+perplexity/pplx-decider-flash-v1.2,224,224,335,True,200,,1.71e-06,238.62162500154227,False,"{'degraded': {'type': 'noul', 'noul': 0.31591298909278004}}"
+perplexity/pplx-decider-flash-v1.2,280,280,418,True,200,,2.18e-06,248.4012919012457,False,"{'degraded': {'type': 'noul', 'noul': 0.4049692697499241}}"
+perplexity/pplx-decider-flash-v1.2,320,320,478,True,200,,2.51e-06,242.26025003008544,False,"{'degraded': {'type': 'noul', 'noul': 0.43388869934995217}}"
+liquid/d1,160,160,239,True,200,,2.26e-06,290.8507080283016,False,"{'degraded': {'type': 'noul', 'noul': 0.29421497216298875}}"
+liquid/d1,224,224,335,True,200,,3.38e-06,388.0947909783572,False,"{'degraded': {'type': 'noul', 'noul': 0.24508500761839525}}"
+liquid/d1,280,280,418,True,200,,4.84e-06,323.0946670519188,False,"{'degraded': {'type': 'noul', 'noul': 0.17328819739040088}}"
+liquid/d1,320,320,478,True,200,,5.56e-06,350.3273749956861,False,"{'degraded': {'type': 'noul', 'noul': 0.29421497216298875}}"
+baseten/joey-1,160,160,239,True,200,,2.64e-06,268.23012495879084,False,"{'degraded': {'type': 'noul', 'noul': 0.6929079096254032}}"
+baseten/joey-1,224,224,335,True,200,,2.64e-06,287.2088340809569,False,"{'degraded': {'type': 'noul', 'noul': 0.7256130041103598}}"
+baseten/joey-1,280,280,418,True,200,,3.11e-06,286.83883300982416,False,"{'degraded': {'type': 'noul', 'noul': 0.3955065223602}}"
+baseten/joey-1,320,320,478,True,200,,3.44e-06,273.1985419522971,False,"{'degraded': {'type': 'noul', 'noul': 0.38913994234121063}}"

@@ -1,0 +1,104 @@
+{
+  "settings": {
+    "detector": "maskrcnn",
+    "score": 0.9,
+    "router": "combined_car",
+    "repairers": {
+      "clean": "none",
+      "rain": "dcp_dehaze",
+      "dust": "task_repair"
+    },
+    "repairers_from": "results/car_repair/choice.json"
+  },
+  "weather_model": "v2",
+  "dropped_locations": [],
+  "paired": {
+    "clean": {
+      "pairs": 24,
+      "collision_none": 0.0,
+      "collision_routed": 0.0,
+      "change": 0.0,
+      "change_ci": [
+        0.0,
+        0.0
+      ],
+      "saved": 0,
+      "caused": 0
+    },
+    "dust": {
+      "pairs": 96,
+      "collision_none": 0.3333333333333333,
+      "collision_routed": 0.3125,
+      "change": -0.020833333333333332,
+      "change_ci": [
+        -0.052083333333333336,
+        0.0
+      ],
+      "saved": 2,
+      "caused": 0
+    },
+    "rain": {
+      "pairs": 144,
+      "collision_none": 0.2638888888888889,
+      "collision_routed": 0.2361111111111111,
+      "change": -0.027777777777777776,
+      "change_ci": [
+        -0.0763888888888889,
+        0.020833333333333332
+      ],
+      "saved": 8,
+      "caused": 4
+    }
+  },
+  "false_braking": [
+    {
+      "weather": "clean",
+      "pipeline": "gt",
+      "runs": 8,
+      "brake_seconds": 0.22,
+      "braked_share": 0.12
+    },
+    {
+      "weather": "clean",
+      "pipeline": "none",
+      "runs": 8,
+      "brake_seconds": 0.35,
+      "braked_share": 0.12
+    },
+    {
+      "weather": "clean",
+      "pipeline": "routed",
+      "runs": 8,
+      "brake_seconds": 0.27,
+      "braked_share": 0.12
+    },
+    {
+      "weather": "dust",
+      "pipeline": "none",
+      "runs": 32,
+      "brake_seconds": 0.18,
+      "braked_share": 0.09
+    },
+    {
+      "weather": "dust",
+      "pipeline": "routed",
+      "runs": 32,
+      "brake_seconds": 0.2,
+      "braked_share": 0.06
+    },
+    {
+      "weather": "rain",
+      "pipeline": "none",
+      "runs": 48,
+      "brake_seconds": 0.11,
+      "braked_share": 0.04
+    },
+    {
+      "weather": "rain",
+      "pipeline": "routed",
+      "runs": 48,
+      "brake_seconds": 0.15,
+      "braked_share": 0.06
+    }
+  ]
+}

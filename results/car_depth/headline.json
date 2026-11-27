@@ -1,0 +1,486 @@
+{
+  "frames": 144,
+  "weather_variants": 16,
+  "score": 0.9,
+  "gate": {
+    "training_towns": {
+      "threshold": 0.25967658730158727,
+      "alpha": 0.05,
+      "calibration_frames": 180
+    },
+    "held_out_towns": {
+      "threshold": 0.6859258658008658,
+      "alpha": 0.05,
+      "calibration_frames": 144
+    }
+  },
+  "obstacle_settings": {
+    "ratio": 0.8,
+    "min_area": 100,
+    "opening": 1,
+    "scale": 0.65
+  },
+  "summary": [
+    {
+      "family": "clean",
+      "method": "base",
+      "map50": 0.7037,
+      "path_recall": 0.8295,
+      "critical_hit": 0.8219,
+      "path_recall_change": NaN,
+      "change_low": NaN,
+      "change_high": NaN,
+      "map50_change": NaN
+    },
+    {
+      "family": "clean",
+      "method": "cue:border_strengthening",
+      "map50": 0.6999,
+      "path_recall": 0.8409,
+      "critical_hit": 0.8356,
+      "path_recall_change": 0.0114,
+      "change_low": 0.0,
+      "change_high": 0.0332,
+      "map50_change": -0.0039
+    },
+    {
+      "family": "clean",
+      "method": "cue:depth_boundary_emphasis",
+      "map50": 0.6921,
+      "path_recall": 0.8182,
+      "critical_hit": 0.8082,
+      "path_recall_change": -0.0114,
+      "change_low": -0.0514,
+      "change_high": 0.024,
+      "map50_change": -0.0116
+    },
+    {
+      "family": "clean",
+      "method": "cue:entity_background_separation",
+      "map50": 0.7078,
+      "path_recall": 0.8295,
+      "critical_hit": 0.8356,
+      "path_recall_change": 0.0,
+      "change_low": -0.0368,
+      "change_high": 0.0265,
+      "map50_change": 0.004
+    },
+    {
+      "family": "clean",
+      "method": "cue:shadow_reinforcement",
+      "map50": 0.7202,
+      "path_recall": 0.8409,
+      "critical_hit": 0.8356,
+      "path_recall_change": 0.0114,
+      "change_low": 0.0,
+      "change_high": 0.0332,
+      "map50_change": 0.0165
+    },
+    {
+      "family": "clean",
+      "method": "cue:contrast_luminance",
+      "map50": 0.6998,
+      "path_recall": 0.8409,
+      "critical_hit": 0.8356,
+      "path_recall_change": 0.0114,
+      "change_low": 0.0,
+      "change_high": 0.0332,
+      "map50_change": -0.0039
+    },
+    {
+      "family": "clean",
+      "method": "cue:thermal_injection",
+      "map50": 0.7146,
+      "path_recall": 0.8068,
+      "critical_hit": 0.8082,
+      "path_recall_change": -0.0227,
+      "change_low": -0.0544,
+      "change_high": 0.0,
+      "map50_change": 0.0108
+    },
+    {
+      "family": "clean",
+      "method": "sam:depth_boundary_emphasis",
+      "map50": 0.6806,
+      "path_recall": 0.8295,
+      "critical_hit": 0.8219,
+      "path_recall_change": 0.0,
+      "change_low": -0.0324,
+      "change_high": 0.0308,
+      "map50_change": -0.0232
+    },
+    {
+      "family": "clean",
+      "method": "sam:entity_background_separation",
+      "map50": 0.7047,
+      "path_recall": 0.8295,
+      "critical_hit": 0.8356,
+      "path_recall_change": 0.0,
+      "change_low": -0.0368,
+      "change_high": 0.0265,
+      "map50_change": 0.0009
+    },
+    {
+      "family": "clean",
+      "method": "conformal",
+      "map50": 0.6996,
+      "path_recall": 0.8409,
+      "critical_hit": 0.8356,
+      "path_recall_change": 0.0114,
+      "change_low": 0.0,
+      "change_high": 0.0326,
+      "map50_change": -0.0041
+    },
+    {
+      "family": "clean",
+      "method": "conformal_local",
+      "map50": 0.7026,
+      "path_recall": 0.8182,
+      "critical_hit": 0.8082,
+      "path_recall_change": -0.0114,
+      "change_low": -0.0388,
+      "change_high": 0.0,
+      "map50_change": -0.0012
+    },
+    {
+      "family": "rain",
+      "method": "base",
+      "map50": 0.3931,
+      "path_recall": 0.5227,
+      "critical_hit": 0.5053,
+      "path_recall_change": NaN,
+      "change_low": NaN,
+      "change_high": NaN,
+      "map50_change": NaN
+    },
+    {
+      "family": "rain",
+      "method": "cue:border_strengthening",
+      "map50": 0.3956,
+      "path_recall": 0.5215,
+      "critical_hit": 0.5023,
+      "path_recall_change": -0.0013,
+      "change_low": -0.0095,
+      "change_high": 0.0058,
+      "map50_change": 0.0025
+    },
+    {
+      "family": "rain",
+      "method": "cue:depth_boundary_emphasis",
+      "map50": 0.3893,
+      "path_recall": 0.5038,
+      "critical_hit": 0.484,
+      "path_recall_change": -0.0189,
+      "change_low": -0.0375,
+      "change_high": -0.0018,
+      "map50_change": -0.0038
+    },
+    {
+      "family": "rain",
+      "method": "cue:entity_background_separation",
+      "map50": 0.3991,
+      "path_recall": 0.5227,
+      "critical_hit": 0.5053,
+      "path_recall_change": 0.0,
+      "change_low": -0.0099,
+      "change_high": 0.0111,
+      "map50_change": 0.0061
+    },
+    {
+      "family": "rain",
+      "method": "cue:shadow_reinforcement",
+      "map50": 0.3989,
+      "path_recall": 0.5189,
+      "critical_hit": 0.5038,
+      "path_recall_change": -0.0038,
+      "change_low": -0.0193,
+      "change_high": 0.0111,
+      "map50_change": 0.0058
+    },
+    {
+      "family": "rain",
+      "method": "cue:contrast_luminance",
+      "map50": 0.3929,
+      "path_recall": 0.524,
+      "critical_hit": 0.5068,
+      "path_recall_change": 0.0013,
+      "change_low": -0.0046,
+      "change_high": 0.0072,
+      "map50_change": -0.0002
+    },
+    {
+      "family": "rain",
+      "method": "cue:thermal_injection",
+      "map50": 0.4016,
+      "path_recall": 0.4886,
+      "critical_hit": 0.4673,
+      "path_recall_change": -0.0341,
+      "change_low": -0.0695,
+      "change_high": -0.0051,
+      "map50_change": 0.0085
+    },
+    {
+      "family": "rain",
+      "method": "sam:depth_boundary_emphasis",
+      "map50": 0.3838,
+      "path_recall": 0.5114,
+      "critical_hit": 0.4932,
+      "path_recall_change": -0.0114,
+      "change_low": -0.0249,
+      "change_high": 0.0025,
+      "map50_change": -0.0093
+    },
+    {
+      "family": "rain",
+      "method": "sam:entity_background_separation",
+      "map50": 0.3977,
+      "path_recall": 0.5253,
+      "critical_hit": 0.5084,
+      "path_recall_change": 0.0025,
+      "change_low": -0.0076,
+      "change_high": 0.0104,
+      "map50_change": 0.0046
+    },
+    {
+      "family": "rain",
+      "method": "conformal",
+      "map50": 0.3909,
+      "path_recall": 0.529,
+      "critical_hit": 0.5114,
+      "path_recall_change": 0.0063,
+      "change_low": -0.0075,
+      "change_high": 0.018,
+      "map50_change": -0.0022
+    },
+    {
+      "family": "rain",
+      "method": "conformal_local",
+      "map50": 0.3921,
+      "path_recall": 0.5215,
+      "critical_hit": 0.5038,
+      "path_recall_change": -0.0013,
+      "change_low": -0.0044,
+      "change_high": 0.0,
+      "map50_change": -0.001
+    },
+    {
+      "family": "dust",
+      "method": "base",
+      "map50": 0.3429,
+      "path_recall": 0.5682,
+      "critical_hit": 0.5594,
+      "path_recall_change": NaN,
+      "change_low": NaN,
+      "change_high": NaN,
+      "map50_change": NaN
+    },
+    {
+      "family": "dust",
+      "method": "cue:border_strengthening",
+      "map50": 0.3434,
+      "path_recall": 0.5663,
+      "critical_hit": 0.5571,
+      "path_recall_change": -0.0019,
+      "change_low": -0.0055,
+      "change_high": 0.0,
+      "map50_change": 0.0005
+    },
+    {
+      "family": "dust",
+      "method": "cue:depth_boundary_emphasis",
+      "map50": 0.3242,
+      "path_recall": 0.5265,
+      "critical_hit": 0.5274,
+      "path_recall_change": -0.0417,
+      "change_low": -0.0666,
+      "change_high": -0.0173,
+      "map50_change": -0.0187
+    },
+    {
+      "family": "dust",
+      "method": "cue:entity_background_separation",
+      "map50": 0.3416,
+      "path_recall": 0.5587,
+      "critical_hit": 0.5502,
+      "path_recall_change": -0.0095,
+      "change_low": -0.0185,
+      "change_high": -0.0021,
+      "map50_change": -0.0013
+    },
+    {
+      "family": "dust",
+      "method": "cue:shadow_reinforcement",
+      "map50": 0.3394,
+      "path_recall": 0.5511,
+      "critical_hit": 0.5434,
+      "path_recall_change": -0.017,
+      "change_low": -0.035,
+      "change_high": -0.0018,
+      "map50_change": -0.0035
+    },
+    {
+      "family": "dust",
+      "method": "cue:contrast_luminance",
+      "map50": 0.3455,
+      "path_recall": 0.5739,
+      "critical_hit": 0.5662,
+      "path_recall_change": 0.0057,
+      "change_low": -0.0022,
+      "change_high": 0.0146,
+      "map50_change": 0.0026
+    },
+    {
+      "family": "dust",
+      "method": "cue:thermal_injection",
+      "map50": 0.3368,
+      "path_recall": 0.5379,
+      "critical_hit": 0.5251,
+      "path_recall_change": -0.0303,
+      "change_low": -0.0522,
+      "change_high": -0.0086,
+      "map50_change": -0.0061
+    },
+    {
+      "family": "dust",
+      "method": "sam:depth_boundary_emphasis",
+      "map50": 0.3035,
+      "path_recall": 0.5152,
+      "critical_hit": 0.5046,
+      "path_recall_change": -0.053,
+      "change_low": -0.0878,
+      "change_high": -0.0207,
+      "map50_change": -0.0394
+    },
+    {
+      "family": "dust",
+      "method": "sam:entity_background_separation",
+      "map50": 0.3378,
+      "path_recall": 0.5568,
+      "critical_hit": 0.5525,
+      "path_recall_change": -0.0114,
+      "change_low": -0.0288,
+      "change_high": 0.0036,
+      "map50_change": -0.0051
+    },
+    {
+      "family": "dust",
+      "method": "conformal",
+      "map50": 0.3443,
+      "path_recall": 0.5682,
+      "critical_hit": 0.5594,
+      "path_recall_change": 0.0,
+      "change_low": -0.0047,
+      "change_high": 0.0042,
+      "map50_change": 0.0014
+    },
+    {
+      "family": "dust",
+      "method": "conformal_local",
+      "map50": 0.3442,
+      "path_recall": 0.5682,
+      "critical_hit": 0.5594,
+      "path_recall_change": 0.0,
+      "change_low": -0.0047,
+      "change_high": 0.0042,
+      "map50_change": 0.0013
+    }
+  ],
+  "obstacle": [
+    {
+      "family": "clean",
+      "hazard_frames": 73,
+      "found_by_detector": 0.8219,
+      "found_by_warning": 0.726,
+      "found_by_either": 0.9452,
+      "frames_without_hazard": 71,
+      "false_warning_rate": 0.1408
+    },
+    {
+      "family": "rain",
+      "hazard_frames": 657,
+      "found_by_detector": 0.5053,
+      "found_by_warning": 0.4475,
+      "found_by_either": 0.7291,
+      "frames_without_hazard": 639,
+      "false_warning_rate": 0.4554
+    },
+    {
+      "family": "dust",
+      "hazard_frames": 438,
+      "found_by_detector": 0.5594,
+      "found_by_warning": 0.6895,
+      "found_by_either": 0.8196,
+      "frames_without_hazard": 426,
+      "false_warning_rate": 0.385
+    }
+  ],
+  "routing": [
+    {
+      "family": "clean",
+      "gate": "rule 0.6",
+      "to_repair": 0.0972,
+      "to_correct_repair": NaN
+    },
+    {
+      "family": "clean",
+      "gate": "conformal (training towns)",
+      "to_repair": 0.6528,
+      "to_correct_repair": NaN
+    },
+    {
+      "family": "clean",
+      "gate": "conformal (held-out towns)",
+      "to_repair": 0.0625,
+      "to_correct_repair": NaN
+    },
+    {
+      "family": "rain",
+      "gate": "rule 0.6",
+      "to_repair": 0.662,
+      "to_correct_repair": 0.662
+    },
+    {
+      "family": "rain",
+      "gate": "conformal (training towns)",
+      "to_repair": 0.9159,
+      "to_correct_repair": 0.9159
+    },
+    {
+      "family": "rain",
+      "gate": "conformal (held-out towns)",
+      "to_repair": 0.6343,
+      "to_correct_repair": 0.6343
+    },
+    {
+      "family": "dust",
+      "gate": "rule 0.6",
+      "to_repair": 0.8171,
+      "to_correct_repair": 0.809
+    },
+    {
+      "family": "dust",
+      "gate": "conformal (training towns)",
+      "to_repair": 1.0,
+      "to_correct_repair": 0.8866
+    },
+    {
+      "family": "dust",
+      "gate": "conformal (held-out towns)",
+      "to_repair": 0.9826,
+      "to_correct_repair": 0.8831
+    }
+  ],
+  "timing_ms": {
+    "repair": 14.6,
+    "depth": 47.1,
+    "sam": 653.0,
+    "detect": 31.4,
+    "cue:border_strengthening": 4.8,
+    "cue:depth_boundary_emphasis": 8.4,
+    "cue:entity_background_separation": 8.2,
+    "cue:shadow_reinforcement": 3.1,
+    "cue:contrast_luminance": 10.4,
+    "cue:thermal_injection": 6.9,
+    "obstacle": 27.0
+  }
+}

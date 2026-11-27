@@ -1,0 +1,25 @@
+{
+  "no_repair": {
+    "xwod_valid/rain": 0.7059884650268194,
+    "xwod_valid/dust": 0.41033043890920373,
+    "coco_clean_select": 0.7765236780322113
+  },
+  "chosen": {
+    "step": 2500,
+    "map50_xwod_valid/rain": 0.7171279700245408,
+    "map50_xwod_valid/dust": 0.42275676080004654,
+    "map50_coco_clean_select": 0.7796050450158876,
+    "change_xwod_valid/rain": 0.011139504997721317,
+    "change_xwod_valid/dust": 0.012426321890842806,
+    "change_coco_clean_select": 0.003081366983676226,
+    "weather_gain": 0.011782913444282062,
+    "clean_ok": true,
+    "det_loss": 0.5231658831371424,
+    "seconds": 1161.770424604416
+  },
+  "weights": "data/cache/restoration/task_repair.pt",
+  "train": {
+    "xwod_train": 586,
+    "coco_clean": 383
+  }
+}

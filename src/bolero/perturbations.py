@@ -219,4 +219,134 @@ HELD_OUT: dict[str, Perturbation] = {
 
 ALL_PERTURBATIONS: dict[str, Perturbation] = {**PERTURBATIONS, **HELD_OUT}
 
+
+# ---- Physics-based weather: heavy rain and dust storms -------------------------
+#
+# Kept out of PERTURBATIONS / ALL_PERTURBATIONS on purpose: the trained detector,
+# tuned strengths, restoration plans and every earlier result cover the 14 + 1
+# suite above. Pass these by name (`--perturbations rain_streaks ...` where a
+# script resolves names through ANY_PERTURBATION, or `conditions.iter_samples`).
+#
+# Haze uses the atmospheric scattering model I = J * t + A * (1 - t) with
+# transmission t = exp(-beta * d). Depth maps are 1 = nearest, so scene distance
+# is d = d0 + (1 - d0) * (1 - depth): even the nearest pixel sits at d0 > 0.
+# Names start with "rain" / "dust" so conditions.condition_label maps them onto
+# the `weather` taxonomy.
+
+RAIN_AIRLIGHT = np.array([0.80, 0.82, 0.85], dtype=np.float32)   # cool gray-white
+DUST_AIRLIGHT = np.array([0.76, 0.60, 0.38], dtype=np.float32)   # yellow-brown
+# Wavelength-dependent extinction for dust, relative to green: blue fades first.
+DUST_BETA_RGB = np.array([0.80, 1.00, 1.35], dtype=np.float32)
+_NEAR_DISTANCE = 0.15
+
+
+def _distance(depth: np.ndarray) -> np.ndarray:
+    return (_NEAR_DISTANCE + (1.0 - _NEAR_DISTANCE) * (1.0 - depth)).astype(np.float32)
+
+
+def _scatter(image: np.ndarray, depth: np.ndarray, beta, airlight: np.ndarray) -> np.ndarray:
+    """I = J t + A (1 - t), t = exp(-beta d); `beta` is a scalar or per-channel (3,)."""
+    t = np.exp(-np.asarray(beta, dtype=np.float32) * _distance(depth)[..., None])
+    return image * t + airlight * (1.0 - t)
+
+
+def _line_kernel(length: int, angle_deg: float) -> np.ndarray:
+    """Normalized motion-blur kernel: a line of `length` pixels at `angle_deg` from vertical."""
+    size = length | 1
+    k = np.zeros((size, size), np.float32)
+    c, a = size // 2, np.deg2rad(angle_deg)
+    for s in np.linspace(-c, c, 2 * size):
+        k[int(round(c + s * np.cos(a))), int(round(c + s * np.sin(a)))] = 1.0
+    return k / k.sum()
+
+
+def _rain_layer(shape: tuple[int, int], s: float, rng: np.random.Generator) -> np.ndarray:
+    """(H, W) streak intensity in [0, 1]: sparse drops smeared along a near-vertical wind angle."""
+    import cv2
+
+    h, w = shape
+    drops = (rng.random((h, w)) < 0.004 + 0.012 * s).astype(np.float32)
+    drops *= rng.uniform(0.5, 1.0, size=(h, w)).astype(np.float32)
+    length = max(5, int(round(min(h, w) * (0.06 + 0.10 * s))))
+    angle = float(rng.uniform(-15.0, 15.0))
+    streaks = cv2.filter2D(drops, -1, _line_kernel(length, angle), borderType=cv2.BORDER_REFLECT)
+    streaks = cv2.GaussianBlur(streaks, (0, 0), 0.6)
+    return np.clip(streaks / (streaks.max() + 1e-6) * (0.55 + 0.35 * s), 0.0, 1.0)
+
+
+def _screen(image: np.ndarray, layer: np.ndarray, color: np.ndarray) -> np.ndarray:
+    """Screen-blend a bright (H, W) layer of `color` over the image."""
+    return 1.0 - (1.0 - image) * (1.0 - layer[..., None] * color)
+
+
+def rain_streaks(image, depth, s, rng):
+    """Falling rain: bright motion-blurred streaks, slight veiling and contrast loss."""
+    streaks = _rain_layer(image.shape[:2], s, rng)
+    veiled = image * (1.0 - 0.12 * s) + RAIN_AIRLIGHT * 0.12 * s
+    return _screen(veiled, streaks, RAIN_AIRLIGHT)
+
+
+def rain_mist(image, depth, s, rng):
+    """Heavy rain: depth-dependent rain haze (far scene washes out first) plus streaks."""
+    hazed = _scatter(image, depth, 0.8 + 2.4 * s, RAIN_AIRLIGHT)
+    return _screen(hazed, _rain_layer(image.shape[:2], s, rng), RAIN_AIRLIGHT)
+
+
+def rain_lens(image, depth, s, rng):
+    """Raindrops on the lens: defocused, slightly refracted, rim-darkened discs."""
+    h, w = image.shape[:2]
+    blurred = _blur(image, 2.0 + 3.0 * s)
+    out = image.copy()
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    for _ in range(int(round(4 + 18 * s))):
+        r = float(rng.uniform(0.03, 0.06 + 0.06 * s) * min(h, w))
+        cy, cx = float(rng.uniform(0, h)), float(rng.uniform(0, w))
+        dist = np.sqrt((yy - cy) ** 2 + (xx - cx) ** 2) / r
+        inside = dist < 1.0
+        if not inside.any():
+            continue
+        # Refraction: sample the blurred image flipped about the drop center (a lens inverts).
+        sy = np.clip(np.round(2 * cy - yy), 0, h - 1).astype(int)
+        sx = np.clip(np.round(2 * cx - xx), 0, w - 1).astype(int)
+        drop = blurred[sy, sx] * 1.05 + 0.03
+        rim = np.clip((dist - 0.8) / 0.2, 0.0, 1.0)[..., None] * 0.2
+        out = np.where(inside[..., None], drop * (1.0 - rim), out)
+    return out
+
+
+def dust_haze(image, depth, s, rng):
+    """Dust: yellow-brown scattering with blue fading first, plus contrast loss."""
+    hazed = _scatter(image, depth, (0.4 + 2.0 * s) * DUST_BETA_RGB, DUST_AIRLIGHT)
+    mean = hazed.mean(axis=(0, 1), keepdims=True)
+    return mean + (hazed - mean) * (1.0 - 0.30 * s)
+
+
+def dust_storm(image, depth, s, rng):
+    """Sand storm: dense dust haze plus wind-blown, near-horizontal sand grains."""
+    import cv2
+
+    hazed = dust_haze(image, depth, min(1.0, 1.2 * s), rng)
+    h, w = image.shape[:2]
+    grains = (rng.random((h, w)) < 0.02 + 0.05 * s).astype(np.float32)
+    length = max(3, int(round(min(h, w) * (0.02 + 0.04 * s))))
+    grains = cv2.filter2D(grains, -1, _line_kernel(length, float(rng.uniform(70.0, 110.0))),
+                          borderType=cv2.BORDER_REFLECT)
+    grains = np.clip(grains / (np.quantile(grains[grains > 0], 0.5) + 1e-6) * (0.25 + 0.25 * s), 0.0, 0.9)
+    return hazed * (1.0 - grains[..., None]) + DUST_AIRLIGHT * 0.9 * grains[..., None]
+
+
+WEATHER: dict[str, Perturbation] = {
+    p.name: p
+    for p in [
+        Perturbation("rain_streaks", "rain", (0.35, 0.65, 1.00), rain_streaks),
+        Perturbation("rain_mist", "rain", (0.35, 0.65, 1.00), rain_mist, True),
+        Perturbation("rain_lens", "rain", (0.35, 0.65, 1.00), rain_lens),
+        Perturbation("dust_haze", "dust", (0.35, 0.65, 1.00), dust_haze, True),
+        Perturbation("dust_storm", "dust", (0.35, 0.65, 1.00), dust_storm, True),
+    ]
+}
+
+# Every perturbation by name, including the opt-in weather set.
+ANY_PERTURBATION: dict[str, Perturbation] = {**ALL_PERTURBATIONS, **WEATHER}
+
 LEVELS = (1, 2, 3)

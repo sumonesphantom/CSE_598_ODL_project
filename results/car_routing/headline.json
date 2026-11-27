@@ -1,0 +1,113 @@
+{
+  "test_drives": [
+    "town02_d0",
+    "town02_d1",
+    "town02_d2",
+    "town10hd_d0",
+    "town10hd_d1",
+    "town10hd_d2"
+  ],
+  "schedule_switches_per_min": 4.0,
+  "test": {
+    "real/raw": {
+      "accuracy": 0.656,
+      "clean_false": 0.115,
+      "wrong_weather": 0.0,
+      "switches_min": 7.167,
+      "delay_s": 2.5,
+      "alpha": NaN,
+      "enter": NaN,
+      "exit": NaN
+    },
+    "real/smoothed": {
+      "accuracy": 0.721,
+      "clean_false": 0.205,
+      "wrong_weather": 0.0,
+      "switches_min": 4.333,
+      "delay_s": 2.0,
+      "alpha": 1.0,
+      "enter": 0.6,
+      "exit": 0.4
+    },
+    "synthetic/raw": {
+      "accuracy": 0.793,
+      "clean_false": 0.337,
+      "wrong_weather": 0.0,
+      "switches_min": 9.667,
+      "delay_s": 0.875,
+      "alpha": NaN,
+      "enter": NaN,
+      "exit": NaN
+    },
+    "synthetic/smoothed": {
+      "accuracy": 0.828,
+      "clean_false": 0.142,
+      "wrong_weather": 0.0,
+      "switches_min": 4.5,
+      "delay_s": 1.292,
+      "alpha": 1.0,
+      "enter": 0.7,
+      "exit": 0.7
+    },
+    "combined/raw": {
+      "accuracy": 0.739,
+      "clean_false": 0.49,
+      "wrong_weather": 0.0,
+      "switches_min": 10.833,
+      "delay_s": 0.0,
+      "alpha": NaN,
+      "enter": NaN,
+      "exit": NaN
+    },
+    "combined/smoothed": {
+      "accuracy": 0.822,
+      "clean_false": 0.167,
+      "wrong_weather": 0.0,
+      "switches_min": 8.667,
+      "delay_s": 1.292,
+      "alpha": 1.0,
+      "enter": 0.7,
+      "exit": 0.7
+    },
+    "carla/raw": {
+      "accuracy": 0.369,
+      "clean_false": 0.108,
+      "wrong_weather": 0.032,
+      "switches_min": 7.167,
+      "delay_s": 5.5,
+      "alpha": NaN,
+      "enter": NaN,
+      "exit": NaN
+    },
+    "carla/smoothed": {
+      "accuracy": 0.44,
+      "clean_false": 0.257,
+      "wrong_weather": 0.218,
+      "switches_min": 5.667,
+      "delay_s": 4.5,
+      "alpha": 1.0,
+      "enter": 0.5,
+      "exit": 0.3
+    },
+    "combined_car/raw": {
+      "accuracy": 0.854,
+      "clean_false": 0.09,
+      "wrong_weather": 0.0,
+      "switches_min": 4.167,
+      "delay_s": 1.0,
+      "alpha": NaN,
+      "enter": NaN,
+      "exit": NaN
+    },
+    "combined_car/smoothed": {
+      "accuracy": 0.854,
+      "clean_false": 0.09,
+      "wrong_weather": 0.0,
+      "switches_min": 4.167,
+      "delay_s": 1.0,
+      "alpha": 1.0,
+      "enter": 0.6,
+      "exit": 0.6
+    }
+  }
+}

@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VLM review packet</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         margin: 24px; max-width: 1180px; }
+  h1 { font-size: 22px; }
+  .card { border: 1px solid #8884; border-radius: 10px; padding: 14px 18px;
+           margin: 18px 0; }
+  .card h2 { font-size: 17px; margin: 0 0 6px; font-family: ui-monospace, monospace; }
+  .meta { margin: 0 0 10px; opacity: 0.85; }
+  .thumbs { display: flex; gap: 12px; flex-wrap: wrap; }
+  figure { margin: 0; flex: 1 1 300px; }
+  figure img { width: 100%; height: auto; border-radius: 6px; display: block; }
+  figcaption { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+                opacity: 0.7; margin-top: 4px; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px;
+        margin: 12px 0 8px; }
+  dt { font-weight: 600; }
+  dd { margin: 0; white-space: pre-wrap; }
+  .manual { font-size: 13px; opacity: 0.8; margin: 0; }
+  code { font-family: ui-monospace, monospace; }
+</style>
+</head>
+<body>
+<h1>VLM review packet</h1>
+<p>One card per row of <code>review.csv</code>. Compare the clean view, the
+reconstructed degraded view, and the overlay (green = entity region, red =
+damaged region) with the VLM's answer and the automatic score.</p>
+<article class="card">
+  <h2>n02102040_671_none</h2>
+  <p class="meta"><strong>image</strong> n02102040_671 &middot;
+     <strong>class</strong> English springer &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> none</p>
+  <div class="thumbs"><figure><img src="n02102040_671_none_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n02102040_671_none_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n02102040_671_none_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>dog</dd>
+    <dt>VLM damaged region</dt><dd>grass</dd>
+    <dt>VLM relation</dt><dd>adjacent</dd>
+    <dt>VLM confidence</dt><dd>0.8</dd>
+    <dt>Auto entity hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>0 (incorrect)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n02102040_671_text</h2>
+  <p class="meta"><strong>image</strong> n02102040_671 &middot;
+     <strong>class</strong> English springer &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> text</p>
+  <div class="thumbs"><figure><img src="n02102040_671_text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n02102040_671_text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n02102040_671_text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>-</dd>
+    <dt>VLM damaged region</dt><dd>grass and flowers</dd>
+    <dt>VLM relation</dt><dd>background</dd>
+    <dt>VLM confidence</dt><dd>0.95</dd>
+    <dt>Auto entity hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>0 (incorrect)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n02102040_671_overlay+text</h2>
+  <p class="meta"><strong>image</strong> n02102040_671 &middot;
+     <strong>class</strong> English springer &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> overlay+text</p>
+  <div class="thumbs"><figure><img src="n02102040_671_overlay+text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n02102040_671_overlay+text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n02102040_671_overlay+text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>English springer, English springer spaniel</dd>
+    <dt>VLM damaged region</dt><dd>damaged region</dd>
+    <dt>VLM relation</dt><dd>background</dd>
+    <dt>VLM confidence</dt><dd>0.5</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>0 (incorrect)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03394916_540_none</h2>
+  <p class="meta"><strong>image</strong> n03394916_540 &middot;
+     <strong>class</strong> French horn &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> none</p>
+  <div class="thumbs"><figure><img src="n03394916_540_none_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03394916_540_none_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03394916_540_none_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>French horn</dd>
+    <dt>VLM damaged region</dt><dd>partially obscured text or design elements</dd>
+    <dt>VLM relation</dt><dd>adjacent</dd>
+    <dt>VLM confidence</dt><dd>0.8</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>0 (incorrect)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03394916_540_text</h2>
+  <p class="meta"><strong>image</strong> n03394916_540 &middot;
+     <strong>class</strong> French horn &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> text</p>
+  <div class="thumbs"><figure><img src="n03394916_540_text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03394916_540_text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03394916_540_text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>French horn, horn</dd>
+    <dt>VLM damaged region</dt><dd>partially obscured by damage</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.9</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03394916_540_overlay+text</h2>
+  <p class="meta"><strong>image</strong> n03394916_540 &middot;
+     <strong>class</strong> French horn &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> overlay+text</p>
+  <div class="thumbs"><figure><img src="n03394916_540_overlay+text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03394916_540_overlay+text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03394916_540_overlay+text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>French horn, horn</dd>
+    <dt>VLM damaged region</dt><dd>details of the French horn</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.9</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>1 (correct)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n02979186_27481_none</h2>
+  <p class="meta"><strong>image</strong> n02979186_27481 &middot;
+     <strong>class</strong> cassette player &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> none</p>
+  <div class="thumbs"><figure><img src="n02979186_27481_none_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n02979186_27481_none_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n02979186_27481_none_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>red object</dd>
+    <dt>VLM damaged region</dt><dd>unknown</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.8</dd>
+    <dt>Auto entity hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n02979186_27481_text</h2>
+  <p class="meta"><strong>image</strong> n02979186_27481 &middot;
+     <strong>class</strong> cassette player &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> text</p>
+  <div class="thumbs"><figure><img src="n02979186_27481_text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n02979186_27481_text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n02979186_27481_text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>cassette player</dd>
+    <dt>VLM damaged region</dt><dd>red object with buttons and knobs</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.8</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n02979186_27481_overlay+text</h2>
+  <p class="meta"><strong>image</strong> n02979186_27481 &middot;
+     <strong>class</strong> cassette player &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> overlay+text</p>
+  <div class="thumbs"><figure><img src="n02979186_27481_overlay+text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n02979186_27481_overlay+text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n02979186_27481_overlay+text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>tape player</dd>
+    <dt>VLM damaged region</dt><dd>red and black object</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.364</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03000684_19300_none</h2>
+  <p class="meta"><strong>image</strong> n03000684_19300 &middot;
+     <strong>class</strong> chain saw &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> none</p>
+  <div class="thumbs"><figure><img src="n03000684_19300_none_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03000684_19300_none_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03000684_19300_none_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>chainsaw</dd>
+    <dt>VLM damaged region</dt><dd>part of the handle</dd>
+    <dt>VLM relation</dt><dd>adjacent</dd>
+    <dt>VLM confidence</dt><dd>0.8</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>0 (incorrect)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03000684_19300_text</h2>
+  <p class="meta"><strong>image</strong> n03000684_19300 &middot;
+     <strong>class</strong> chain saw &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> text</p>
+  <div class="thumbs"><figure><img src="n03000684_19300_text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03000684_19300_text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03000684_19300_text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>chainsaw</dd>
+    <dt>VLM damaged region</dt><dd>part of the chainsaw blade</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.9</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>1 (correct)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03000684_19300_overlay+text</h2>
+  <p class="meta"><strong>image</strong> n03000684_19300 &middot;
+     <strong>class</strong> chain saw &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> overlay+text</p>
+  <div class="thumbs"><figure><img src="n03000684_19300_overlay+text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03000684_19300_overlay+text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03000684_19300_overlay+text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>chainsaw</dd>
+    <dt>VLM damaged region</dt><dd>damaged area</dd>
+    <dt>VLM relation</dt><dd>background</dd>
+    <dt>VLM confidence</dt><dd>0.5</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>0 (incorrect)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03028079_26390_none</h2>
+  <p class="meta"><strong>image</strong> n03028079_26390 &middot;
+     <strong>class</strong> church &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> none</p>
+  <div class="thumbs"><figure><img src="n03028079_26390_none_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03028079_26390_none_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03028079_26390_none_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>church</dd>
+    <dt>VLM damaged region</dt><dd>building structure</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.95</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03028079_26390_text</h2>
+  <p class="meta"><strong>image</strong> n03028079_26390 &middot;
+     <strong>class</strong> church &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> text</p>
+  <div class="thumbs"><figure><img src="n03028079_26390_text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03028079_26390_text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03028079_26390_text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>monastery</dd>
+    <dt>VLM damaged region</dt><dd>damaged region most likely contains a damaged area of the monastery</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.924</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03028079_26390_overlay+text</h2>
+  <p class="meta"><strong>image</strong> n03028079_26390 &middot;
+     <strong>class</strong> church &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> overlay+text</p>
+  <div class="thumbs"><figure><img src="n03028079_26390_overlay+text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03028079_26390_overlay+text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03028079_26390_overlay+text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>monastery</dd>
+    <dt>VLM damaged region</dt><dd>damaged area</dd>
+    <dt>VLM relation</dt><dd>background</dd>
+    <dt>VLM confidence</dt><dd>0.9</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>0 (incorrect)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03417042_11_none</h2>
+  <p class="meta"><strong>image</strong> n03417042_11 &middot;
+     <strong>class</strong> garbage truck &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> none</p>
+  <div class="thumbs"><figure><img src="n03417042_11_none_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03417042_11_none_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03417042_11_none_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>blue truck</dd>
+    <dt>VLM damaged region</dt><dd>partially obscured text</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.75</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03417042_11_text</h2>
+  <p class="meta"><strong>image</strong> n03417042_11 &middot;
+     <strong>class</strong> garbage truck &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> text</p>
+  <div class="thumbs"><figure><img src="n03417042_11_text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03417042_11_text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03417042_11_text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>garbage truck, dustcart</dd>
+    <dt>VLM damaged region</dt><dd>background</dd>
+    <dt>VLM relation</dt><dd>background</dd>
+    <dt>VLM confidence</dt><dd>0.5</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>0 (incorrect)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03417042_11_overlay+text</h2>
+  <p class="meta"><strong>image</strong> n03417042_11 &middot;
+     <strong>class</strong> garbage truck &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> overlay+text</p>
+  <div class="thumbs"><figure><img src="n03417042_11_overlay+text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03417042_11_overlay+text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03417042_11_overlay+text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>garbage truck, dustcart</dd>
+    <dt>VLM damaged region</dt><dd>damaged region content is not specified in the provided evidence.</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.9</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03425413_21592_none</h2>
+  <p class="meta"><strong>image</strong> n03425413_21592 &middot;
+     <strong>class</strong> gas pump &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> none</p>
+  <div class="thumbs"><figure><img src="n03425413_21592_none_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03425413_21592_none_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03425413_21592_none_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>fire truck</dd>
+    <dt>VLM damaged region</dt><dd>red and white sign</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.95</dd>
+    <dt>Auto entity hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03425413_21592_text</h2>
+  <p class="meta"><strong>image</strong> n03425413_21592 &middot;
+     <strong>class</strong> gas pump &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> text</p>
+  <div class="thumbs"><figure><img src="n03425413_21592_text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03425413_21592_text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03425413_21592_text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>gas pump, gasoline pump, petrol pump, island dispenser</dd>
+    <dt>VLM damaged region</dt><dd>damage on the gas pump</dd>
+    <dt>VLM relation</dt><dd>background</dd>
+    <dt>VLM confidence</dt><dd>0.8</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>1 (correct)</dd>
+    <dt>Auto relation hit</dt><dd>0 (incorrect)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03425413_21592_overlay+text</h2>
+  <p class="meta"><strong>image</strong> n03425413_21592 &middot;
+     <strong>class</strong> gas pump &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> overlay+text</p>
+  <div class="thumbs"><figure><img src="n03425413_21592_overlay+text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03425413_21592_overlay+text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03425413_21592_overlay+text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>convertible</dd>
+    <dt>VLM damaged region</dt><dd>damage on the car&#x27;s roof</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.8</dd>
+    <dt>Auto entity hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03445777_13831_none</h2>
+  <p class="meta"><strong>image</strong> n03445777_13831 &middot;
+     <strong>class</strong> golf ball &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> none</p>
+  <div class="thumbs"><figure><img src="n03445777_13831_none_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03445777_13831_none_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03445777_13831_none_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>golf balls</dd>
+    <dt>VLM damaged region</dt><dd>text</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.8</dd>
+    <dt>Auto entity hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03445777_13831_text</h2>
+  <p class="meta"><strong>image</strong> n03445777_13831 &middot;
+     <strong>class</strong> golf ball &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> text</p>
+  <div class="thumbs"><figure><img src="n03445777_13831_text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03445777_13831_text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03445777_13831_text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>golf balls</dd>
+    <dt>VLM damaged region</dt><dd>text on the box</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.8</dd>
+    <dt>Auto entity hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03445777_13831_overlay+text</h2>
+  <p class="meta"><strong>image</strong> n03445777_13831 &middot;
+     <strong>class</strong> golf ball &middot;
+     <strong>condition</strong> background_removal
+     (level 2) &middot;
+     <strong>config</strong> overlay+text</p>
+  <div class="thumbs"><figure><img src="n03445777_13831_overlay+text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03445777_13831_overlay+text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03445777_13831_overlay+text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>golf balls</dd>
+    <dt>VLM damaged region</dt><dd>text on the box</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.8</dd>
+    <dt>Auto entity hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03888257_11580_none</h2>
+  <p class="meta"><strong>image</strong> n03888257_11580 &middot;
+     <strong>class</strong> parachute &middot;
+     <strong>condition</strong> boundary_erase
+     (level 2) &middot;
+     <strong>config</strong> none</p>
+  <div class="thumbs"><figure><img src="n03888257_11580_none_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03888257_11580_none_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03888257_11580_none_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>airplanes</dd>
+    <dt>VLM damaged region</dt><dd>smoke trails</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.95</dd>
+    <dt>Auto entity hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03888257_11580_text</h2>
+  <p class="meta"><strong>image</strong> n03888257_11580 &middot;
+     <strong>class</strong> parachute &middot;
+     <strong>condition</strong> boundary_erase
+     (level 2) &middot;
+     <strong>config</strong> text</p>
+  <div class="thumbs"><figure><img src="n03888257_11580_text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03888257_11580_text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03888257_11580_text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>parachute, chute</dd>
+    <dt>VLM damaged region</dt><dd>clouds</dd>
+    <dt>VLM relation</dt><dd>background</dd>
+    <dt>VLM confidence</dt><dd>0.9</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>0 (incorrect)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n03888257_11580_overlay+text</h2>
+  <p class="meta"><strong>image</strong> n03888257_11580 &middot;
+     <strong>class</strong> parachute &middot;
+     <strong>condition</strong> boundary_erase
+     (level 2) &middot;
+     <strong>config</strong> overlay+text</p>
+  <div class="thumbs"><figure><img src="n03888257_11580_overlay+text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n03888257_11580_overlay+text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n03888257_11580_overlay+text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>parachute, chute</dd>
+    <dt>VLM damaged region</dt><dd>clouds</dd>
+    <dt>VLM relation</dt><dd>background</dd>
+    <dt>VLM confidence</dt><dd>0.9</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>0 (incorrect)</dd>
+    <dt>Auto relation hit</dt><dd>0 (incorrect)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n01440764_10592_none</h2>
+  <p class="meta"><strong>image</strong> n01440764_10592 &middot;
+     <strong>class</strong> tench &middot;
+     <strong>condition</strong> boundary_erase
+     (level 2) &middot;
+     <strong>config</strong> none</p>
+  <div class="thumbs"><figure><img src="n01440764_10592_none_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n01440764_10592_none_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n01440764_10592_none_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>man holding fish</dd>
+    <dt>VLM damaged region</dt><dd>fish</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.95</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>1 (correct)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n01440764_10592_text</h2>
+  <p class="meta"><strong>image</strong> n01440764_10592 &middot;
+     <strong>class</strong> tench &middot;
+     <strong>condition</strong> boundary_erase
+     (level 2) &middot;
+     <strong>config</strong> text</p>
+  <div class="thumbs"><figure><img src="n01440764_10592_text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n01440764_10592_text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n01440764_10592_text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>man holding fish</dd>
+    <dt>VLM damaged region</dt><dd>man holding fish</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.999</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>1 (correct)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+<article class="card">
+  <h2>n01440764_10592_overlay+text</h2>
+  <p class="meta"><strong>image</strong> n01440764_10592 &middot;
+     <strong>class</strong> tench &middot;
+     <strong>condition</strong> boundary_erase
+     (level 2) &middot;
+     <strong>config</strong> overlay+text</p>
+  <div class="thumbs"><figure><img src="n01440764_10592_overlay+text_clean.jpg" alt="clean"><figcaption>clean</figcaption></figure><figure><img src="n01440764_10592_overlay+text_degraded.jpg" alt="degraded"><figcaption>degraded</figcaption></figure><figure><img src="n01440764_10592_overlay+text_overlay.jpg" alt="overlay"><figcaption>overlay</figcaption></figure></div>
+  <dl>
+    <dt>VLM entity</dt><dd>man holding fish</dd>
+    <dt>VLM damaged region</dt><dd>man holding fish</dd>
+    <dt>VLM relation</dt><dd>overlaps_entity</dd>
+    <dt>VLM confidence</dt><dd>0.9</dd>
+    <dt>Auto entity hit</dt><dd>1 (correct)</dd>
+    <dt>Auto damage hit</dt><dd>1 (correct)</dd>
+    <dt>Auto relation hit</dt><dd>1 (correct)</dd>
+    <dt>Geometric relation</dt><dd>overlaps_entity</dd>
+  </dl>
+  <p class="manual">Fill <code>manual_entity_correct</code>,
+     <code>manual_damage_correct</code> and <code>manual_relation_correct</code>
+     in review.csv with 1 (the automatic label is right), 0 (it is wrong), or
+     leave blank to skip the field.</p>
+</article>
+</body>
+</html>

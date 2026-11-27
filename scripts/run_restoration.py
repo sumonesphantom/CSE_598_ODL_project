@@ -5,8 +5,9 @@ For each val image, each perturbation x severity, and the clean image itself,
 the perturbed input is passed through each restoration method and re-classified:
 
   none                   the perturbed image as-is (reference)
-  oracle_classical       the classical plan for the true perturbation
-  detector_classical     the plan for the detected perturbation
+  oracle_classical       the classical plan for the *true* perturbation (upper bound)
+  detector_classical     the plan for the *detected* perturbation; pass-through if unsure
+                         (fixed 0.6 threshold, or the conformal gate with --conformal-gate)
   baseline:<name>        a depth-free preprocessing baseline, applied blindly
   cue:<name>             one depth-derived contextual cue (see depth_source)
   detector+cue:<name>    detector_classical followed by the cue (perturbed depth)
@@ -34,6 +35,7 @@ import _bootstrap  # noqa: F401
 from bolero.baselines import BASELINES, apply_baseline
 from bolero.classifier import BatchPredictor, FrozenClassifier
 from bolero.config import RESULTS_DIR, SEED
+from bolero.conformal import ConformalGate
 from bolero.cues import CUES, apply_cue
 from bolero.data import list_images, load_image
 from bolero.depth import DepthCache, DepthEstimator, rank_agreement, resize_depth
@@ -41,7 +43,8 @@ from bolero.detection import CLEAN, PerturbationDetector
 from bolero.metrics import psnr, recovery_rate, ssim, transitions
 from bolero.perturbations import ALL_PERTURBATIONS, HELD_OUT, LEVELS, rng_for
 from bolero.records import prefixed, save
-from bolero.restoration import load_plans, restore
+from bolero.restoration import load_skip_plans, restore
+from bolero.segmentation import Segmenter, StructureCache, structure_map
 from bolero.tuning import load_strengths, method_key
 
 DEPTH_SOURCES = ["perturbed", "clean", "mismatched"]
@@ -60,53 +63,23 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--per-class", type=int, default=50)
-    parser.add_argument(
-        "--perturbations",
-        nargs="*",
-        default=list(ALL_PERTURBATIONS),
-        choices=list(ALL_PERTURBATIONS),
-    )
-    parser.add_argument(
-        "--cues",
-        nargs="*",
-        default=list(CUES),
-        choices=list(CUES),
-    )
-    parser.add_argument(
-        "--baselines",
-        nargs="*",
-        default=list(BASELINES),
-        choices=list(BASELINES),
-    )
-    parser.add_argument(
-        "--combo-cues",
-        nargs="*",
-        default=list(CUES),
-        choices=list(CUES),
-        help="Cues to run after detector restoration (pass no names to skip)",
-    )
-    parser.add_argument(
-        "--depth-sources",
-        nargs="*",
-        default=DEPTH_SOURCES,
-        choices=DEPTH_SOURCES,
-    )
-    parser.add_argument(
-        "--strengths",
-        type=Path,
-        default=RESULTS_DIR / "tuning" / "strengths.json",
-    )
-    parser.add_argument(
-        "--plans",
-        type=Path,
-        default=RESULTS_DIR / "tuning" / "plans.json",
-        help="Development-selected restoration plans from scripts/tune_plans.py",
-    )
-    parser.add_argument(
-        "--detector",
-        type=Path,
-        default=RESULTS_DIR / "detector" / "detector.joblib",
-    )
+    parser.add_argument("--perturbations", nargs="*", default=list(ALL_PERTURBATIONS),
+                        choices=list(ALL_PERTURBATIONS))
+    parser.add_argument("--cues", nargs="*", default=list(CUES), choices=list(CUES))
+    parser.add_argument("--baselines", nargs="*", default=list(BASELINES), choices=list(BASELINES))
+    parser.add_argument("--combo-cues", nargs="*", default=list(CUES), choices=list(CUES),
+                        help="Cues to run after detector restoration (pass no names to skip)")
+    parser.add_argument("--depth-sources", nargs="*", default=DEPTH_SOURCES, choices=DEPTH_SOURCES)
+    parser.add_argument("--structure-source", choices=["depth", "sam", "detr"], default="depth",
+                        help="structure map the cues use for the 'perturbed' source: estimated depth "
+                             "(default), a SAM entity mask or a DETR box (see run_structure_compare.py)")
+    parser.add_argument("--strengths", type=Path, default=RESULTS_DIR / "tuning" / "strengths.json")
+    parser.add_argument("--detector", type=Path, default=RESULTS_DIR / "detector" / "detector.joblib")
+    parser.add_argument("--skip-plans", type=Path, default=None,
+                        help="skip_plans.json from scripts/audit_plans.py: detector-routed restoration "
+                             "passes through for these perturbations (oracle_classical keeps every plan)")
+    parser.add_argument("--conformal-gate", type=Path, default=None,
+                        help="headline.json from scripts/run_conformal.py; replaces the fixed threshold")
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--device", default=None)
     parser.add_argument(
@@ -129,15 +102,26 @@ def main() -> None:
 
     if args.combo_cues and "perturbed" not in args.depth_sources:
         raise SystemExit("--combo-cues needs the 'perturbed' depth source.")
-
+    if args.structure_source != "depth" and set(args.depth_sources) != {"perturbed"}:
+        raise SystemExit("--structure-source sam/detr replaces the perturbed depth map only; "
+                         "use --depth-sources perturbed.")
     strengths, strength_status = load_strengths(args.strengths)
-    plans, plan_status, plan_variants = load_plans(args.plans)
-
+    skip_plans = load_skip_plans(args.skip_plans)
     detector = PerturbationDetector.load(args.detector)
+    if args.conformal_gate:
+        gate = json.loads(args.conformal_gate.read_text())["gate"]
+        detector = ConformalGate(detector, gate["threshold_on_1_minus_p_clean"], gate["alpha"])
     classifier = FrozenClassifier(args.backbone, device=args.device)
     estimator = DepthEstimator(device=args.device)
     depth_cache = DepthCache(estimator)
     predictor = BatchPredictor(classifier, args.batch_size)
+    segmenter = (StructureCache(Segmenter(args.structure_source, device=args.device))
+                 if args.structure_source != "depth" else None)
+
+    def structure(x: np.ndarray) -> np.ndarray:
+        if segmenter is None:
+            return estimator(x)
+        return structure_map(segmenter.entity_mask(x), x.shape[:2])
 
     conditions = [(CLEAN, 0)] + [
         (name, level)
@@ -202,11 +186,9 @@ def main() -> None:
 
             depth_ms, perturbed_depth = 0.0, None
             if needs_depth:
-                perturbed_depth, depth_ms = timed(estimator, x)
-                cond["depth_rank_corr"] = rank_agreement(
-                    perturbed_depth,
-                    clean_depth,
-                )
+                perturbed_depth, depth_ms = timed(structure, x)
+                cond["depth_rank_corr"] = (rank_agreement(perturbed_depth, clean_depth)
+                                           if segmenter is None else np.nan)
 
             emit({**cond, "method": "none"}, x, 0.0)
 
@@ -219,28 +201,10 @@ def main() -> None:
                 )
 
             decision, detect_ms = timed(detector.decide, x)
-            routed, restore_ms = timed(
-                restore,
-                x,
-                decision.label,
-                plans,
-            )
-
-            detect_meta = {
-                "detected": decision.label,
-                "detected_raw": decision.predicted,
-                "detected_prob": decision.probability,
-            }
-
-            emit(
-                {
-                    **cond,
-                    "method": "detector_classical",
-                    **detect_meta,
-                },
-                routed,
-                detect_ms + restore_ms,
-            )
+            routed, restore_ms = timed(restore, x, decision.label, skip_plans)
+            detect_meta = {"detected": decision.label, "detected_raw": decision.predicted,
+                           "detected_prob": decision.probability}
+            emit({**cond, "method": "detector_classical", **detect_meta}, routed, detect_ms + restore_ms)
 
             for baseline in args.baselines:
                 key = method_key("baseline", baseline)
@@ -319,37 +283,15 @@ def main() -> None:
 
     summary = summarize(df)
     save(summary, args.out / "summary.csv")
-
-    (args.out / "run.json").write_text(
-        json.dumps(
-            {
-                "split": "val",
-                "images": len(records),
-                "per_class": args.per_class,
-                "seed": args.seed,
-                "strengths_file": str(args.strengths),
-                "strength_status": strength_status,
-                "strengths": strengths,
-                "plans_file": str(args.plans),
-                "plan_status": plan_status,
-                "plan_variants": plan_variants,
-                "depth_sources": args.depth_sources,
-                "backbone": args.backbone,
-                "detector": str(args.detector),
-            },
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
-
-    print(
-        f"Strengths: {strength_status}; "
-        f"plans: {plan_status}"
-    )
-    print("Selected plan variants:")
-    for perturbation, variant in plan_variants.items():
-        print(f"  {perturbation}: {variant}")
-
+    (args.out / "run.json").write_text(json.dumps({
+        "split": "val", "images": len(records), "per_class": args.per_class, "seed": args.seed,
+        "strengths_file": str(args.strengths), "strength_status": strength_status,
+        "strengths": strengths, "depth_sources": args.depth_sources,
+        "conformal_gate": str(args.conformal_gate) if args.conformal_gate else None,
+        "skip_plans": sorted(skip_plans),
+        "structure_source": args.structure_source,
+    }, indent=2))
+    print(f"Strengths: {strength_status}")
     print(summarize_overall(df).to_string(index=False))
 
 
